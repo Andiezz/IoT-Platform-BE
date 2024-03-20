@@ -1,0 +1,1 @@
+export const findRelative = (keyword: string) => ({ $regex: keyword.replace('(', '\\(').replace(')', '\\)'), $options: 'i' })
