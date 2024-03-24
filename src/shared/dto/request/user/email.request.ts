@@ -22,5 +22,5 @@ export class TargetDTO {
     @ApiPropertyOptional()
     @IsOptional()
     @IsNotEmpty()
-    public target_model: string;
+    public targetModel: string;
 }

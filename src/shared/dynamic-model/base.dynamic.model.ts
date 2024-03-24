@@ -14,7 +14,7 @@ import {
   InsertOneOptions,
   BulkWriteOptions,
 } from 'mongodb';
-import { BaseModel } from '../model/base.model';
+import { BaseModel } from '../models/base.model';
 
 export class BaseDynamic<T extends BaseModel> {
   protected collectionPostfix: string;
@@ -32,7 +32,11 @@ export class BaseDynamic<T extends BaseModel> {
     return collection;
   }
 
-  public async insertOne(collectionName: string, model: T, options?: InsertOneOptions): Promise<T> {
+  public async insertOne(
+    collectionName: string,
+    model: T,
+    options?: InsertOneOptions,
+  ): Promise<T> {
     const collection = this.getCollection(collectionName);
     if (!model['_id']) {
       const id = new ObjectId();
@@ -50,7 +54,11 @@ export class BaseDynamic<T extends BaseModel> {
     };
   }
 
-  public async insertMany(collectionName: string, models: T[], options?: BulkWriteOptions): Promise<T[]> {
+  public async insertMany(
+    collectionName: string,
+    models: T[],
+    options?: BulkWriteOptions,
+  ): Promise<T[]> {
     const collection = this.getCollection(collectionName);
     const results = await collection.insertMany(models, {
       ...(options || {}),
@@ -61,7 +69,11 @@ export class BaseDynamic<T extends BaseModel> {
     return models;
   }
 
-  public async findOne(collectionName: string, id: string | ObjectId, options?: FindOptions): Promise<T> {
+  public async findOne(
+    collectionName: string,
+    id: string | ObjectId,
+    options?: FindOptions,
+  ): Promise<T> {
     if (!ObjectId.isValid(id)) {
       throw new Error('Invalid object id');
     }
@@ -78,7 +90,11 @@ export class BaseDynamic<T extends BaseModel> {
     return result as T;
   }
 
-  public async find(collectionName: string, filter: Filter<T> = {}, options: FindOptions<T> = {}): Promise<T[]> {
+  public async find(
+    collectionName: string,
+    filter: Filter<T> = {},
+    options: FindOptions<T> = {},
+  ): Promise<T[]> {
     const collection = this.getCollection(collectionName);
     const results = await collection.find(filter, options).toArray();
 
@@ -126,7 +142,10 @@ export class BaseDynamic<T extends BaseModel> {
     return result.modifiedCount > 0;
   }
 
-  public async deleteOneById(collectionName: string, id: string | ObjectId): Promise<boolean> {
+  public async deleteOneById(
+    collectionName: string,
+    id: string | ObjectId,
+  ): Promise<boolean> {
     if (!ObjectId.isValid(id)) {
       throw new Error('Invalid object id');
     }
@@ -163,7 +182,14 @@ export class BaseDynamic<T extends BaseModel> {
     return this.getCollection(collectionName).aggregate(pipeline, opt);
   }
 
-  public async count(collectionName: string, filter: Filter<T>, countOpt: CountDocumentsOptions = {}) {
-    return await this.getCollection(collectionName).countDocuments(filter, countOpt);
+  public async count(
+    collectionName: string,
+    filter: Filter<T>,
+    countOpt: CountDocumentsOptions = {},
+  ) {
+    return await this.getCollection(collectionName).countDocuments(
+      filter,
+      countOpt,
+    );
   }
 }

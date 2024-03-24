@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      .imgLogo {
+        width: 72px;
+        height: 72px;
+        margin-right: 14px;
+      }
+      .titleName {
+        color: rgb(53, 137, 234);
+        font-size: 31px;
+        line-height: 29px;
+        font-family: Arial;
+      }
+      .container {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        .main {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+  <body class="container">
+    <header>
+      <div style="display: flex">
+        <div>
+          <img
+            class="imgLogo"
+            src="https://d2g5hra3l2p3a0.cloudfront.net/files/avatar/64a24916bda5b01a61ce552c/logo.png"
+          />
+        </div>
+        <div class="titleName">IoT Platform</div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="title">
+        <p>Dear Mr./Mrs./Ms. <%= firstName %>,</p>
+        <div></div>
+
+        <p>Welcome to our platform! We're glad to have you on board.</p>
+        <div></div>
+
+        <p>
+          Before you can begin utilizing our services, you must activate your
+          account. Kindly click on the provided link to finalize the activation
+          process:
+          <a href="<%- createNewPasswordLink %>">
+            <%= createNewPasswordLink %> </a
+          >.
+        </p>
+        <p>
+          Upon activating your account, you can log in and start exploring all
+          the offerings available on our platform.
+        </p>
+        <div></div>
+
+        <p>
+          If you encounter any questions or encounter any issues, our support
+          team is readily available to assist you.
+        </p>
+        <div></div>
+
+        <p>Best regards,</p>
+      </div>
+    </main>
+  </body>
+</html>

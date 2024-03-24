@@ -1,21 +1,27 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from 'src/shared/model/users.model';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GetProfileResponse {
   @ApiProperty()
   public id: string;
+
   @ApiProperty()
-  public first_name: string;
+  public firstName: string;
+
   @ApiProperty()
-  public last_name: string;
+  public lastName: string;
+
   @ApiProperty()
-  public phone_code: string;
+  public phoneCode: string;
+
   @ApiProperty()
-  public phone_number: string;
+  public phoneNumber: string;
+
   @ApiProperty()
   public email: string;
-  @ApiProperty()
+
+  @ApiPropertyOptional()
   public avatar: string;
+
   @ApiProperty()
-  public role?: UserRole;
+  public role: string;
 }

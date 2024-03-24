@@ -1,0 +1,15 @@
+{
+  "list": [
+    {
+      "collection": "roles",
+      "type": "index",
+      "action": "create",
+      "indexSpec": {
+        "role": 1
+      },
+      "options": {
+        "unique": true
+      }
+    }
+  ]
+}

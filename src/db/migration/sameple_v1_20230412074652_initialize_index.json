@@ -1,0 +1,24 @@
+{
+  "list": [
+    {
+      "collection": "users",
+      "type": "index",
+      "action": "create",
+      "indexSpec": {
+        "email": 1
+      },
+      "options": {
+        "unique": true
+      }
+    },
+    {
+      "collection": "users",
+      "type": "index",
+      "action": "drop",
+      "name": "email_1",
+      "indexSpec": {
+        "email": 1
+      }
+    }
+  ]
+}

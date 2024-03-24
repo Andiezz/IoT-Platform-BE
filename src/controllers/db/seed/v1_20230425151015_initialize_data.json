@@ -1,0 +1,43 @@
+{
+    "list": [
+        {
+            "collection": "device_types",
+            "action": "insert",
+            "options": [
+                {
+                    "option": {},
+                    "data": {
+                        "name": "PV Inverter",
+                        "sort": 1
+                    }
+                }
+            ]
+        },
+        {
+            "collection": "device_types",
+            "action": "insert",
+            "options": [
+                {
+                    "option": {},
+                    "data": {
+                        "name": "Diesel Generator",
+                        "sort": 2
+                    }
+                }
+            ]
+        },
+        {
+            "collection": "device_types",
+            "action": "insert",
+            "options": [
+                {
+                    "option": {},
+                    "data": {
+                        "name": "Wind Turbine",
+                        "sort": 3
+                    }
+                }
+            ]
+        }
+    ]
+}

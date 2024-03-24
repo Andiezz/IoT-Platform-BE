@@ -1,0 +1,66 @@
+{
+    "list": [
+        {
+            "collection": "alarms",
+            "type": "index",
+            "action": "create",
+            "indexSpec": {
+                "plant_id": 1,
+                "device_id": 1,
+                "timestamp": 1,
+                "createdOn": 1
+            },
+            "options": {}
+        },
+        {
+            "collection": "devices",
+            "type": "index",
+            "action": "create",
+            "indexSpec": {
+                "plant_id": 1,
+                "createdOn": 1,
+                "type": 1
+            },
+            "options": {}
+        },
+        {
+            "collection": "read_notifcations",
+            "type": "index",
+            "action": "create",
+            "indexSpec": {
+                "notification_id": 1,
+                "user_notification_id": 1
+            },
+            "options": {}
+        },
+        {
+            "collection": "read_notifcations",
+            "type": "index",
+            "action": "create",
+            "indexSpec": {
+                "notification_id": 1,
+                "user_notification_id": 1
+            },
+            "options": {}
+        },
+        {
+            "collection": "notification",
+            "type": "index",
+            "action": "create",
+            "indexSpec": {
+                "action_by_id": 1
+            },
+            "options": {}
+        },
+        {
+            "collection": "user_notification",
+            "type": "index",
+            "action": "create",
+            "indexSpec": {
+                "notification_id": 1,
+                "user_id": 1
+            },
+            "options": {}
+        }
+    ]
+}

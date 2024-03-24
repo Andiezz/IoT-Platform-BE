@@ -1,0 +1,16 @@
+{
+  "list": [
+    {
+      "collection": "permission_detail",
+      "type": "index",
+      "action": "create",
+      "indexSpec": {
+        "action": 1,
+        "controller": 1
+      },
+      "options": {
+        "unique": true
+      }
+    }
+  ]
+}

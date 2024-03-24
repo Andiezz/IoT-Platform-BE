@@ -1,0 +1,14 @@
+{
+  "list": [
+    {
+      "collection": "user_activity_log",
+      "type": "index",
+      "action": "create",
+      "indexSpec": {
+        "activity_log_id": 1
+      },
+      "options": {
+      }
+    }
+  ]
+}

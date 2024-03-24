@@ -1,21 +1,28 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from 'src/shared/model/users.model';
+import { ROLE } from 'src/shared/models/user.model';
 
 export class GetAccountResponse {
   @ApiProperty()
   public id: string;
+
   @ApiProperty()
-  public first_name: string;
+  public firstName: string;
+
   @ApiProperty()
-  public last_name: string;
+  public lastName: string;
+
   @ApiProperty()
   public email: string;
+
   @ApiProperty()
-  public phone_code: string;
+  public phoneCode: string;
+
   @ApiProperty()
-  public phone_number: string;
+  public phoneNumber: string;
+
   @ApiProperty()
-  public is_active: boolean;
+  public isActive: boolean;
+
   @ApiProperty()
-  public role?: UserRole;
+  public role?: ROLE;
 }

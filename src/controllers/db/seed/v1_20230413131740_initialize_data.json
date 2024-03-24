@@ -1,0 +1,60 @@
+{
+  "list": [
+    {
+      "collection": "roles",
+      "action": "insert",
+      "options": [
+        {
+          "option": {},
+          "data": {
+            "name": "Super Admin",
+            "role": "super-admin",
+            "sort": 1
+          }
+        }
+      ]
+    },
+    {
+      "collection": "roles",
+      "action": "insert",
+      "options": [
+        {
+          "option": {},
+          "data": {
+            "name": "Analyst",
+            "role": "analyst",
+            "sort": 3
+          }
+        }
+      ]
+    },
+    {
+      "collection": "roles",
+      "action": "insert",
+      "options": [
+        {
+          "option": {},
+          "data": {
+            "name": "Tenant Admin",
+            "role": "tenant-admin",
+            "sort": 2
+          }
+        }
+      ]
+    },
+    {
+      "collection": "roles",
+      "action": "insert",
+      "options": [
+        {
+          "option": {},
+          "data": {
+            "name": "Viewer",
+            "role": "viewer",
+            "sort": 4
+          }
+        }
+      ]
+    }
+  ]
+}

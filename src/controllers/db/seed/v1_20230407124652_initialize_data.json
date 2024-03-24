@@ -1,0 +1,24 @@
+{
+  "list": [
+    {
+      "collection": "users",
+      "action": "insert",
+      "options": [
+        {
+          "option": {},
+          "data": {
+            "email": "exro@superadmin.com",
+            "salt": "$2b$10$Ipv94Up.LQhNSPh1ZLX4nO",
+            "hash": "$2b$10$Ipv94Up.LQhNSPh1ZLX4nO66wQobkOOcqbTVNga5m5lWvKIFzDYcq",
+            "first_name": "Exro",
+            "last_name": "Super Amin",
+            "phone_number": "123456789",
+            "phone_code": "+1",
+            "is_active": true,
+            "is_first_login": false
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -8,3 +8,8 @@ export const PAGINATION_SORT = {
   ASC: 1,
   DESC: -1
 }
+
+export enum SORT_ORDER {
+  ASC = 'ASC',
+  DESC = 'DESC',
+}

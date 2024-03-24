@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+      .imgLogo {
+        width: 72px;
+        height: 72px;
+        margin-right: 14px;
+      }
+      .titleName {
+        color: rgb(53, 137, 234);
+        font-size: 31px;
+        line-height: 29px;
+        font-family: Arial;
+      }
+      .container {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        .main {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="container">
+    <header>
+      <div style="display: flex">
+        <div>
+          <img
+            class="imgLogo"
+            src="https://d2g5hra3l2p3a0.cloudfront.net/files/avatar/64a24916bda5b01a61ce552c/logo.png"
+          />
+        </div>
+        <div class="titleName">IoT Platform</div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="title">
+        <p>Dear Mr./Mrs./Ms. <%= firstName %>,</p>
+        <div></div>
+
+        <p>
+          We are writing to notify you that your account status has been updated
+          from active to inactive. This alteration could impact your access to
+          specific features or functionalities within our system.
+        </p>
+        <div></div>
+
+        <p>
+          If you have any inquiries or concerns regarding this adjustment or
+          wish to reactivate your account, please feel free to reach out to our
+          customer support team at
+          <a href="mailto:<%= emailSupport %>"> <%= emailSupport %> </a>. We
+          apologize for any inconvenience this may cause and appreciate your
+          understanding.
+        </p>
+        <div></div>
+
+        <p>
+          If you have any further questions or concerns, please do not hesitate
+          to contact our customer support team.
+        </p>
+        <div></div>
+
+        <p>Sincerely,</p>
+      </div>
+    </main>
+  </body>
+</html>

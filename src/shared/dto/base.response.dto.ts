@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ResponseCodeConstant } from '../constants/ResponseConstants';
+import { ResponseCodeConstant } from '../constants/response.constants';
 
 export class BaseResponse<T> {
   @ApiProperty()
@@ -19,31 +19,31 @@ export class BaseResponse<T> {
     this.message = msg;
   }
 
-  public static ok<T>(data: T): BaseResponse<T> {
-    return new BaseResponse(ResponseCodeConstant.SUCCESS, '', data);
+  public static ok<T>(data?: T, msg: string = ''): BaseResponse<T> {
+    return new BaseResponse(ResponseCodeConstant.SUCCESS, msg, data);
   }
 
-  public static notFound<T>(): BaseResponse<T> {
-    return new BaseResponse(ResponseCodeConstant.RESOURCE_NOTFOUND, undefined);
+  public static notFound<T>(msg: string = ''): BaseResponse<T> {
+    return new BaseResponse(ResponseCodeConstant.RESOURCE_NOT_FOUND, msg);
   }
 
-  public static badRequest(msg: string) {
+  public static badRequest(msg: string = '') {
     return new BaseResponse(ResponseCodeConstant.BAD_REQUEST, msg);
   }
 
-  public static badRequestWithData<T>(data: T) {
-    return new BaseResponse(ResponseCodeConstant.BAD_REQUEST, '', data);
+  public static badRequestWithData<T>(data: T, msg: string= '') {
+    return new BaseResponse(ResponseCodeConstant.BAD_REQUEST, msg, data);
   }
 
-  public static unauthorized<T>(msg: string): BaseResponse<T> {
+  public static unauthorized<T>(msg: string= ''): BaseResponse<T> {
     return new BaseResponse(ResponseCodeConstant.UNAUTHORIZED, msg);
   }
 
-  public static forbidden<T>(msg: string): BaseResponse<T> {
+  public static forbidden<T>(msg: string= ''): BaseResponse<T> {
     return new BaseResponse(ResponseCodeConstant.FORBIDDEN, msg);
   }
 
-  public static internalServerError<T>(msg: string): BaseResponse<T> {
+  public static internalServerError<T>(msg: string= ''): BaseResponse<T> {
     return new BaseResponse(ResponseCodeConstant.INTERNAL_SERVER_ERROR, msg);
   }
 }

@@ -1,0 +1,25 @@
+{
+  "list": [
+    {
+      "collection": "users",
+      "action": "insert",
+      "options": [
+        {
+          "option": {},
+          "data": {
+            "email": "vthanh.an57@gmail.com",
+            "salt": "$2b$10$Ipv94Up",
+            "hash": "$2a$10$T6vTytvhfaislrG07KrYc.DVUZLRNzLsDO9YdyzVqFU62j4RsekaW",
+            "firstName": "Vu",
+            "lastName": "Thanh An",
+            "phoneNumber": "123456789",
+            "phoneCode": "+84",
+            "isActive": true,
+            "isFirstLogin": false,
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  ]
+}

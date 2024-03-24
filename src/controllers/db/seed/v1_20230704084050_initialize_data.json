@@ -1,0 +1,18 @@
+{
+    "list": [
+        {
+            "collection": "roles",
+            "action": "insert",
+            "options": [
+                {
+                    "option": {},
+                    "data": {
+                        "name": "Customer Service",
+                        "role": "customer-service",
+                        "sort": 5
+                    }
+                }
+            ]
+        }
+    ]
+}

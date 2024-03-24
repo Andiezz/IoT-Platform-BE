@@ -1,0 +1,18 @@
+{
+  "list": [
+    {
+      "collection": "users",
+      "action": "insert",
+      "options": [
+        {
+          "option": {},
+          "data": {
+            "email": "thai@bnksolution.com",
+            "salt": "abcd",
+            "hash": "abcd"
+          }
+        }
+      ]
+    }
+  ]
+}
