@@ -270,7 +270,7 @@ export class AuthenticationService {
         {
           userId: user._id,
           status: user.isActive,
-          expired_at: new Date(currentDate.getTime() + 15 * 60 * 1000), //expire 15 minutes
+          expiredAt: new Date(currentDate.getTime() + 15 * 60 * 1000), //expire 15 minutes
         },
         jwt.jwtLifetimeForgotPassword,
       );
@@ -284,7 +284,7 @@ export class AuthenticationService {
         subject: 'Password Reset Request',
         template: 'reset-password.ejs',
         context: {
-          firstname: user.firstName,
+          firstName: user.firstName,
           createNewPasswordLink,
           emailSupport: mailer.emailSupport,
         },

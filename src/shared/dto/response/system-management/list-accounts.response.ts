@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ROLE } from 'src/shared/models/user.model';
 
 class BaseResponse {
   @ApiProperty()
@@ -35,20 +36,20 @@ export class AccountResponse extends BaseResponse {
   public email: string;
 
   @ApiProperty()
-  public first_name: string;
+  public firstName: string;
 
   @ApiProperty()
-  public last_name: string;
+  public lastName: string;
 
   @ApiProperty()
-  public phone_code: string;
+  public phoneCode: string;
 
   @ApiProperty()
-  public phone_number: number;
+  public phoneNumber: number;
 
   @ApiProperty()
-  public is_active: boolean;
+  public isActive: boolean;
 
   @ApiProperty()
-  public user_role: UserRole;
+  public role: ROLE;
 }

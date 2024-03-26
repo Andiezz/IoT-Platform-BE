@@ -112,7 +112,7 @@ export class SystemManagementService {
         .collection(NormalCollection.USER)
         .findOneAndUpdate(
           { _id: new ObjectId(userId) },
-          { $set: { activationCode, updatedOn: new Date() } },
+          { $set: { activationCode: activationCode, updatedOn: new Date() } },
           { session },
         );
 
@@ -183,6 +183,7 @@ export class SystemManagementService {
       }
 
       email && (toBeUpdated['email'] = email);
+      role && (toBeUpdated['role'] = role);
 
       const updated = (
         await db.collection(NormalCollection.USER).findOneAndUpdate(
@@ -195,7 +196,7 @@ export class SystemManagementService {
             upsert: true,
           },
         )
-      ).value as UserModel;
+      ) as UserModel;
 
       session.inTransaction() && (await session.commitTransaction());
 

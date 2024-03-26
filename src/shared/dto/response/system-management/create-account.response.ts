@@ -8,8 +8,8 @@ export class CreateAccountResponse {
   public email: string;
 
   @ApiProperty()
-  public first_name: string;
+  public firstName: string;
 
   @ApiProperty()
-  public last_name: string;
+  public lastName: string;
 }
