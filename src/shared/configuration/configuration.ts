@@ -38,6 +38,16 @@ export interface AwsConfiguration {
   thingPolicy: string;
 }
 
+export interface IotConsumerConfiguration {
+  clientId: string;
+  host: string;
+  port: number;
+  ca: string;
+  privateKey: string;
+  certKey: string;
+  topics: string[];
+}
+
 export interface AppConfiguration {
   url: string;
   cloudFrontUrl: string;
@@ -48,8 +58,14 @@ export interface Configuration {
   jwt: JwtConfiguration;
   database: DBConfiguration;
   mailer: MailerConfiguration;
+  iotConsumer: IotConsumerConfiguration;
   app: AppConfiguration;
 }
+
+const CERT_BEGIN = '-----BEGIN CERTIFICATE-----';
+const CERT_END = '-----END CERTIFICATE-----';
+const KEY_BEGIN = '-----BEGIN RSA PRIVATE KEY-----';
+const KEY_END = '-----END RSA PRIVATE KEY-----';
 
 export default (): Configuration => ({
   port: parseInt(process.env.PORT, 10) || 8888,
@@ -83,6 +99,15 @@ export default (): Configuration => ({
     pazzword: process.env.MAILER_PAZZ || '',
     mailerSendFrom: process.env.MAILER_SEND_FROM,
     emailSupport: process.env.MAILER_EMAIL_SUPPORT,
+  },
+  iotConsumer: {
+    clientId: process.env.IOT_CLIENT_ID || '',
+    host: process.env.IOT_HOST || '',
+    port: process.env.IOT_PORT ? Number(process.env.IOT_PORT) : 1883,
+    ca: `${CERT_BEGIN}\n${process.env.IOT_CA}\n${CERT_END}`,
+    privateKey: `${KEY_BEGIN}\n${process.env.IOT_PRIVATE_KEY}\n${KEY_END}`,
+    certKey: `${CERT_BEGIN}\n${process.env.IOT_CERT_KEY}\n${CERT_END}`,
+    topics: [],
   },
   app: {
     url: process.env.FRONT_BASE_URL || 'http://localhost:3000',

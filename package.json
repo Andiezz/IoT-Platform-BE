@@ -43,6 +43,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.5.0",
     "morgan": "^1.10.0",
+    "mqtt": "^5.5.0",
     "nest-winston": "^1.9.4",
     "nodemailer": "^6.9.13",
     "reflect-metadata": "^0.1.13",
