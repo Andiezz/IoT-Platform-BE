@@ -1,0 +1,1 @@
+export const AWS_CLIENT_OPTIONS = 'AWS_CLIENT_OPTIONS';

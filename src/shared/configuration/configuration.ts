@@ -28,6 +28,16 @@ export interface JwtConfiguration {
   jwtSec: string;
 }
 
+export interface AwsConfiguration {
+  appId: string;
+  appSecret: string;
+  region: string;
+  bucket: string;
+  useGlobalCredential: boolean;
+  awsRootCaUrl: string;
+  thingPolicy: string;
+}
+
 export interface AppConfiguration {
   url: string;
   cloudFrontUrl: string;

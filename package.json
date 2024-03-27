@@ -20,6 +20,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-iam": "^3.540.0",
+    "@aws-sdk/client-iot": "^3.540.0",
+    "@aws-sdk/client-s3": "^3.540.0",
+    "@aws-sdk/client-sts": "^3.540.0",
+    "@aws-sdk/util-arn-parser": "^3.535.0",
+    "@nestjs/axios": "^3.0.2",
     "@nestjs/common": "^10.3.4",
     "@nestjs/config": "^3.2.0",
     "@nestjs/core": "^9.0.0",
