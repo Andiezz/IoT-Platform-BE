@@ -15,7 +15,6 @@ import {
   S3,
 } from '@aws-sdk/client-s3';
 import { STS } from '@aws-sdk/client-sts';
-import { build as arnBuild } from '@aws-sdk/util-arn-parser';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { Buffer } from 'buffer';
@@ -270,20 +269,6 @@ export class AwsService implements OnModuleInit {
     const command = new GetObjectCommand(getObjCmd);
     const result = await this.s3Client.send(command);
     result.Body.transformToWebStream().pipeTo(outStream);
-  }
-
-  // iot job service
-  iotArnBuild(id: string | number, resourceType: string = 'thing'): string {
-    if (id.toString().includes('arn:aws')) {
-      return id.toString();
-    }
-
-    return arnBuild({
-      accountId: this.accountId,
-      region: this.options.awsRegion,
-      service: 'iot',
-      resource: `${resourceType}/${id}`,
-    }).toString();
   }
 
   // put file to S3 and return job placeholder presigned url
