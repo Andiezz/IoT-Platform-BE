@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { RequestContextModule } from './modules/request-context';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration, {
+  AwsConfiguration,
   DBConfiguration,
   MailerConfiguration,
 } from './shared/configuration/configuration';
@@ -25,6 +26,9 @@ import { MailerModule } from './modules/mailer-core/mailer.module';
 import { EjsEngine } from './modules/mailer-core/template-engine/Ejs.engine';
 import { join } from 'path';
 import { ValidationModule } from './modules/validation/validation.module';
+import { ThingModule } from './modules/thing/thing.module';
+import { AwsModule } from './modules/aws';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -34,6 +38,7 @@ import { ValidationModule } from './modules/validation/validation.module';
     SystemManagementModule,
     UserManagementModule,
     UserModule,
+    ThingModule,
     ValidationModule,
     ConfigModule.forRoot({
       isGlobal: true,
@@ -50,7 +55,18 @@ import { ValidationModule } from './modules/validation/validation.module';
           prettyPrint: true,
         }),
       ),
-      transports: [new winston.transports.Console()],
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.ms(),
+            nestWinstonModuleUtilities.format.nestLike('Nest', {
+              colors: true,
+              prettyPrint: true,
+            }),
+          ),
+        }),
+      ],
     }),
     MongoModule.forRootAsync({
       imports: [ConfigModule],
@@ -94,6 +110,22 @@ import { ValidationModule } from './modules/validation/validation.module';
               rejectUnauthorized: false,
             },
           },
+        };
+      },
+      inject: [ConfigService],
+    }),
+    AwsModule.forAsyncRoot({
+      imports: [ConfigModule, HttpModule.register({})],
+      useFactory: (cfg: ConfigService) => {
+        const awsOption = cfg.getOrThrow<AwsConfiguration>('aws');
+        return {
+          accessKey: awsOption.appId,
+          accessSecret: awsOption.appSecret,
+          awsRegion: awsOption.region,
+          bucket: awsOption.bucket,
+          useGlobalCredential: awsOption.useGlobalCredential,
+          awsRootCaUrl: awsOption.awsRootCaUrl,
+          thingPolicy: awsOption.thingPolicy,
         };
       },
       inject: [ConfigService],

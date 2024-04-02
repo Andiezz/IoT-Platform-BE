@@ -96,7 +96,7 @@ export class AwsService implements OnModuleInit {
         merge: false,
       },
     });
-    this.logger.debug('thing information', iotThing?.thingName);
+    this.logger.debug('Thing information', iotThing?.thingName);
     // create cert
     const thingCert = await this.iotClient.createKeysAndCertificate({
       setAsActive: thingOpt.isActive,

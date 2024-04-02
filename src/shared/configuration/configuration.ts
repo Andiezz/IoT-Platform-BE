@@ -59,6 +59,7 @@ export interface Configuration {
   database: DBConfiguration;
   mailer: MailerConfiguration;
   iotConsumer: IotConsumerConfiguration;
+  aws: AwsConfiguration;
   app: AppConfiguration;
 }
 
@@ -108,6 +109,15 @@ export default (): Configuration => ({
     privateKey: `${KEY_BEGIN}\n${process.env.IOT_PRIVATE_KEY}\n${KEY_END}`,
     certKey: `${CERT_BEGIN}\n${process.env.IOT_CERT_KEY}\n${CERT_END}`,
     topics: [],
+  },
+  aws: {
+    appId: process.env.AWS_APP_ID,
+    appSecret: process.env.AWS_APP_SECRET,
+    region: process.env.AWS_REGION,
+    bucket: process.env.AWS_BUCKET,
+    useGlobalCredential: process.env.AWS_USE_GLOBAL_CREDENTIALS == 'true',
+    awsRootCaUrl: process.env.AWS_USE_ROOT_CA_URL || 'https://www.amazontrust.com/repository/AmazonRootCA1.pem',
+    thingPolicy: process.env.AWS_THING_POLICY_NAME || ''
   },
   app: {
     url: process.env.FRONT_BASE_URL || 'http://localhost:3000',

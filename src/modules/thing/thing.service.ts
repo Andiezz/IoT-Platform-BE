@@ -1,15 +1,9 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectClient, InjectCollection } from '../mongodb';
 import { NormalCollection } from 'src/shared/constants/mongo.collection';
 import { ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
 import { UserModel } from 'src/shared/models/user.model';
 import { ConfigService } from '@nestjs/config';
-import { UserService } from '../user/user.service';
 import { AwsService } from '../aws';
 import { CreateThingDto } from 'src/shared/dto/request/thing/create.request';
 import {
@@ -20,6 +14,7 @@ import {
   Certificate,
   DEVICE_STATUS,
   Device,
+  Location,
   Manager,
   ParameterStandard,
   ThingModel,
@@ -47,7 +42,7 @@ export class ThingService {
       session.startTransaction();
 
       // I. Validate data
-      await this.nameExist(name, session);
+      await this.isNameExist(name, session);
 
       // II. Create Thing
       const thingModel = new ThingModel();
@@ -55,6 +50,7 @@ export class ThingService {
       thingModel.name = name;
       thingModel.information = information;
       thingModel.status = DEVICE_STATUS.PENDING_SETUP;
+      thingModel.location = new Location();
       thingModel.location.name = location.name;
       thingModel.location.address = location.address;
       thingModel.location.longitude = location.longitude;
@@ -69,7 +65,7 @@ export class ThingService {
         const deviceModel = new Device();
         deviceModel.name = device.name;
         deviceModel.information = device.information;
-        deviceModel.status = device.status;
+        deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
         deviceModel.type = device?.type;
         deviceModel.model = device.model;
 
@@ -169,7 +165,7 @@ export class ThingService {
     }
   }
 
-  public async nameExist(
+  public async isNameExist(
     name: string,
     session?: ClientSession,
   ): Promise<boolean> {

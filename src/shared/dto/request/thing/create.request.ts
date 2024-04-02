@@ -112,13 +112,11 @@ export class CreateThingDto {
   public status: DEVICE_STATUS = DEVICE_STATUS.PENDING_SETUP;
 
   @ApiProperty({ type: [ManagerDto] })
-  @ValidateNested({ each: true })
   @Type(() => ManagerDto)
   public managers: ManagerDto[];
 
   @ApiPropertyOptional({ type: [DeviceDto] })
   @IsOptional()
-  @ValidateNested({ each: true })
   @Type(() => DeviceDto)
   devices?: DeviceDto[];
 }
