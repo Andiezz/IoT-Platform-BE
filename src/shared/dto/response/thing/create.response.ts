@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 
 export class CertificateFile {
@@ -14,16 +14,16 @@ export class CertificateFile {
   public type: string;
 }
 
-export class CreateThingResponse {
+export class SaveThingResponse {
   @ApiProperty()
   @IsString()
   public msg: string
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsString()
   public files?: Array<CertificateFile>
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsString()
   public id?: string
 }

@@ -6,11 +6,9 @@ import {
   IsNotEmptyObject,
   IsNumber,
   IsObject,
-  IsOptional,
-  ValidateNested,
+  IsOptional
 } from 'class-validator';
-import { ObjectId } from 'mongodb';
-import { DEVICE_STATUS } from 'src/shared/models/thing.model';
+import { DEVICE_STATUS } from 'src/shared/models/device.model';
 
 class ParameterStandardDto {
   @ApiProperty()
@@ -29,7 +27,7 @@ class ParameterStandardDto {
   public max?: number;
 }
 
-class DeviceDto {
+export class DeviceDto {
   @ApiProperty()
   @IsNotEmpty()
   @Transform(({ value }: { value: string }) => value.trim())
@@ -82,8 +80,7 @@ export class LocationDto {
 export class ManagerDto {
   @ApiProperty()
   @IsNotEmpty()
-  @Transform(({ value }: { value: string }) => new ObjectId(value))
-  public userId: ObjectId;
+  public userId: string;
 
   @ApiProperty()
   @IsNotEmpty()
@@ -91,7 +88,7 @@ export class ManagerDto {
   public isOwner: boolean;
 }
 
-export class CreateThingDto {
+export class SaveThingDto {
   @ApiProperty()
   @IsNotEmpty()
   @Transform(({ value }: { value: string }) => value.trim())

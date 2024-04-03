@@ -6,12 +6,10 @@ import { ThingService } from './thing.service';
 
 @Module({
   imports: [
-    MongoModule.forFeature([
-      NormalCollection.THING,
-    ]),
+    MongoModule.forFeature([NormalCollection.THING, NormalCollection.DEVICE]),
     UserModule,
   ],
   providers: [ThingService],
   exports: [ThingService],
 })
-export class ThingModule { }
+export class ThingModule {}
