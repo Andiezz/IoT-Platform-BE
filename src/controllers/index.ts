@@ -13,5 +13,5 @@ export default [
   SystemManagementController,
   UserManagementController,
   UserController,
-  ThingController
+  ThingController,
 ]

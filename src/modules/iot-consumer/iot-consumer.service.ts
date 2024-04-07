@@ -1,12 +1,13 @@
+import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import {
-  Injectable,
-  Logger,
-  OnApplicationShutdown,
-} from '@nestjs/common';
-import { IIotMessageProcessor } from './iot-consumer.interface';
+  DeviceStatusMessage,
+  IIotMessageProcessor,
+} from './iot-consumer.interface';
 import { ConfigService } from '@nestjs/config';
 import { IotConsumerConfiguration } from 'src/shared/configuration/configuration';
 import * as mqtt from 'mqtt';
+import { ThingService } from '../thing/thing.service';
+import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class IotMessageProcessor
@@ -18,6 +19,7 @@ export class IotMessageProcessor
 
   constructor(
     private readonly cfg: ConfigService,
+    private readonly thingService: ThingService,
   ) {
     this.initClient();
   }
@@ -72,11 +74,40 @@ export class IotMessageProcessor
     }
   }
 
+  private async processThingStatusMessage(
+    message: DeviceStatusMessage,
+  ): Promise<void> {
+    if (message.eventType === 'connected') {
+      await this.thingService.updateStatusActive(
+        new ObjectId(message.clientId),
+      );
+    } else if (message.eventType === 'disconnected') {
+      await this.thingService.updateStatusInactive(
+        new ObjectId(message.clientId),
+      );
+    }
+  }
+
   public async process(topic: string, message: Buffer): Promise<void> {
+    const iotCfg: IotConsumerConfiguration = this.cfg.getOrThrow('iotConsumer');
+    const jsonMessage: DeviceStatusMessage = JSON.parse(
+      message.toLocaleString(),
+    );
+    // skip messages from this client
+    if (jsonMessage.clientId !== iotCfg.clientId) {
+      return;
+    }
+
     if (
       topic.includes('presence/connected') ||
       topic.includes('presence/disconnected')
     ) {
+      await this.processThingStatusMessage(jsonMessage);
+    } else if (/^thing\/([a-z0-9]+)\/real_time_data$/.test(topic)) {
+      //TODO:
+      // process real time data, publish socket
+      // 1. update device status
+      // 2. trigger notification warning
     }
   }
 }

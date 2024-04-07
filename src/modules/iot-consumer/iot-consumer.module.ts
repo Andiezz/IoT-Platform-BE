@@ -3,12 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { IotMessageProcessor } from './iot-consumer.service';
 
 @Module({
-  imports: [
-    ConfigModule,
-  ],
+  imports: [ConfigModule],
   providers: [IotMessageProcessor],
   exports: [IotMessageProcessor],
 })
-export class IotConsumerModule {
-
-}
+export class IotConsumerModule {}

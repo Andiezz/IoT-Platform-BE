@@ -6,10 +6,14 @@ export enum TargetModel {
   USER = 'user',
 }
 
+export class Receiver {
+  userId: ObjectId;
+  readAt: Date | null;
+}
+
 export class NotificationModel extends BaseModel {
   title: string;
   content: string;
   type: string;
-  target: ObjectId;
-  targetModel: TargetModel;
+  receivers: Receiver[];
 }

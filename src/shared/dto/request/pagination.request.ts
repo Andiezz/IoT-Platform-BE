@@ -1,9 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Transform } from 'class-transformer';
 import { IsOptional } from 'class-validator';
-import { PAGINATION_DEFAULT, PAGINATION_SORT } from 'src/shared/constants/pagination.constants';
+import {
+  PAGINATION_DEFAULT,
+  PAGINATION_SORT,
+} from 'src/shared/constants/pagination.constants';
 
-export class FindQueryDto {
+export class PaginationDto {
   @ApiPropertyOptional()
   @IsOptional()
   @Transform(({ value }) => JSON.parse(value))
@@ -16,17 +19,18 @@ export class FindQueryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  public sort_by?: string = 'createdOn';
+  public sortBy?: string = 'createdOn';
 
   @ApiPropertyOptional({ enum: [1, -1], description: `1: ASC; -1: DESC` })
   @IsOptional()
   @Transform(({ value }) => JSON.parse(value))
-  public sort_order?: number = PAGINATION_SORT.DESC;
+  public sortOrder?: number = PAGINATION_SORT.DESC;
 
   @Expose()
   @Transform(
     ({ obj: { page, limit } }) =>
-      ((Number(page) || PAGINATION_DEFAULT.PAGE) - 1) * (Number(limit) || PAGINATION_DEFAULT.LIMIT),
+      ((Number(page) || PAGINATION_DEFAULT.PAGE) - 1) *
+      (Number(limit) || PAGINATION_DEFAULT.LIMIT),
   )
   public skip: number;
 }

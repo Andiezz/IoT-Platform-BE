@@ -29,6 +29,9 @@ import { ValidationModule } from './modules/validation/validation.module';
 import { ThingModule } from './modules/thing/thing.module';
 import { AwsModule } from './modules/aws';
 import { HttpModule } from '@nestjs/axios';
+import { IotConsumerModule } from './modules/iot-consumer/iot-consumer.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { SocketModule } from './modules/socket/socket.module';
 
 @Module({
   imports: [
@@ -40,6 +43,9 @@ import { HttpModule } from '@nestjs/axios';
     UserModule,
     ThingModule,
     ValidationModule,
+    IotConsumerModule,
+    NotificationModule,
+    SocketModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local'],

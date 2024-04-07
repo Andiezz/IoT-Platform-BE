@@ -34,6 +34,8 @@ import {
 } from 'src/shared/utils/array.utils';
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { findRelative } from 'src/shared/utils/find-relative.utils';
+import { ThingData } from '../iot-consumer/iot-consumer.interface';
+import { PARAMETER_NAME } from './thing.constant';
 
 @Injectable()
 export class ThingService {
@@ -498,7 +500,7 @@ export class ThingService {
   }
 
   public async listDevices(thingId: ObjectId, user: UserModel) {
-    const thing = await this.thingCollection
+    const thing = (await this.thingCollection
       .aggregate([
         {
           $match: {
@@ -512,13 +514,101 @@ export class ThingService {
           },
         },
       ])
-      .toArray() as ThingModel[];
+      .toArray()) as ThingModel[];
 
-    if(thing.length === 0) {
-      throw new NotFoundException('thing-not-exist')
+    if (thing.length === 0) {
+      throw new NotFoundException('thing-not-exist');
     }
 
     return thing[0].devices;
+  }
+
+  public async updateStatusActive(thingId: ObjectId) {
+    const session = this.client.startSession();
+    try {
+      session.startTransaction();
+
+      // I. Validate data
+      const thing = await this.isExist({ _id: thingId }, session);
+
+      // II. Update devices
+      const updateDevices = thing.devices?.map((device) => {
+        device['status'] = DEVICE_STATUS.INACTIVE;
+        return device;
+      });
+
+      await this.thingCollection.updateOne(
+        {
+          _id: thingId,
+        },
+        {
+          $set: {
+            status: DEVICE_STATUS.ACTIVE,
+            devices: updateDevices,
+            updatedOn: new Date(),
+          },
+        },
+        { session },
+      );
+
+      await session.commitTransaction();
+      // response
+      const response = new SaveThingResponse();
+      response.msg = 'thing-updated-success';
+      response.id = thingId.toString();
+      return response;
+    } catch (error) {
+      this.logger.error(error);
+      session.inTransaction() && (await session.abortTransaction());
+      await session.endSession();
+      throw new BadRequestException(error.message);
+    } finally {
+      session.inTransaction() && (await session.endSession());
+    }
+  }
+
+  public async updateStatusInactive(thingId: ObjectId) {
+    const session = this.client.startSession();
+    try {
+      session.startTransaction();
+
+      // I. Validate data
+      const thing = await this.isExist({ _id: thingId }, session);
+
+      // II. Update devices
+      const updateDevices = thing.devices?.map((device) => {
+        device['status'] = DEVICE_STATUS.INACTIVE;
+        return device;
+      });
+
+      await this.thingCollection.updateOne(
+        {
+          _id: thingId,
+        },
+        {
+          $set: {
+            status: DEVICE_STATUS.INACTIVE,
+            devices: updateDevices,
+            updatedOn: new Date(),
+          },
+        },
+        { session },
+      );
+
+      await session.commitTransaction();
+      // response
+      const response = new SaveThingResponse();
+      response.msg = 'thing-updated-success';
+      response.id = thingId.toString();
+      return response;
+    } catch (error) {
+      this.logger.error(error);
+      session.inTransaction() && (await session.abortTransaction());
+      await session.endSession();
+      throw new BadRequestException(error.message);
+    } finally {
+      session.inTransaction() && (await session.endSession());
+    }
   }
 
   public async isNameExist(
