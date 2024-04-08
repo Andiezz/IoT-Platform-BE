@@ -35,7 +35,8 @@ import {
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { findRelative } from 'src/shared/utils/find-relative.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import { PARAMETER_NAME } from './thing.constant';
+import { PARAMETER_MESSAGE, PARAMETER_NAME } from './thing.constant';
+import { TYPE } from '../notification/template-notification';
 
 @Injectable()
 export class ThingService {
@@ -499,13 +500,13 @@ export class ThingService {
     }
   }
 
-  public async listDevices(thingId: ObjectId, user: UserModel) {
+  public async listDevices(thingId: ObjectId, user?: UserModel) {
     const thing = (await this.thingCollection
       .aggregate([
         {
           $match: {
             _id: thingId,
-            'managers.userId': user._id,
+            'managers.userId': user?._id,
           },
         },
         {
@@ -609,6 +610,39 @@ export class ThingService {
     } finally {
       session.inTransaction() && (await session.endSession());
     }
+  }
+
+  public validateThingData(data: ThingData, devices: Device[]) {
+    if (devices.length === 0) {
+      return;
+    }
+
+    devices.forEach((device) => {
+      device.parameterStandards.forEach((parameter, j) => {
+        const value = data[`${parameter.name.toLowerCase()}`];
+        if(!value) {
+          return;
+        }
+
+        let message: string;
+        let type: string;
+        if (parameter?.max && value > parameter.max) {
+          message = PARAMETER_MESSAGE.ABOVE_STANDARD;
+          type = TYPE.WARNING;
+        } else if (parameter?.min && value < parameter.min) {
+          message = PARAMETER_MESSAGE.BELOW_STANDARD;
+          type = TYPE.WARNING;
+        } else {
+          message = PARAMETER_MESSAGE.STANDARD;
+        }
+
+        device.parameterStandards[j]['message'] = message;
+        device.parameterStandards[j]['value'] = value;
+        type && (device.parameterStandards[j]['type'] = type);
+      });
+    });
+
+    return devices;
   }
 
   public async isNameExist(

@@ -1,13 +1,19 @@
 export const PARAMETER_NAME = {
-  PM25: 'PM2.5',
+  PM25: 'PM25',
   CO2: 'CO2',
   Temp: 'Temperature',
   Humi: 'Humidity',
   LPG: 'LPG',
-  CH4: 'Metan',
+  CH4: 'CH4',
   CO: 'CO',
-  Alcol: 'Alcohol',
+  Alcohol: 'Alcohol',
   Toluen: 'Toluen',
-  NH4: 'Amoni',
+  NH4: 'NH4',
   Aceton: 'Aceton',
+};
+
+export const PARAMETER_MESSAGE = {
+  ABOVE_STANDARD: 'above-standard',
+  BELOW_STANDARD: 'below-standard',
+  STANDARD: 'standard',
 };

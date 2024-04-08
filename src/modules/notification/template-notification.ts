@@ -3,8 +3,12 @@ export const TITLE = {
 };
 
 export const CONTENT = {
-  EXCEED_THRESHOLD:
-    'Thing $thingId - Device $deviceName exceeded the allowed threshold of parameter $parameter which is $value $unit',
+  ABOVE_STANDARD: `Thing $1 - Device $2 has the following parameters exceeded the allowed threshold:
+    $3 
+    which is $4 $5 respectively`,
+  BELOW_STANDARD: `Thing $1 - Device $2 has the following parameters falled behind the allowed threshold:
+    $3 
+    which is $4 $5 respectively`,
 };
 
 export const TYPE = {

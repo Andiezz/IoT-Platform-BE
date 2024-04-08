@@ -8,6 +8,9 @@ import { ThingService } from '../thing/thing.service';
 import { ListNotificationDto } from 'src/shared/dto/request/notification/list.request';
 import { UserModel } from 'src/shared/models/user.model';
 import { UpdateNotificationDto } from 'src/shared/dto/request/notification/update.request';
+import { ThingData } from '../iot-consumer/iot-consumer.interface';
+import { CreateExceedThresholdNotificationDto } from 'src/shared/dto/request/notification/create.request';
+import { PARAMETER_MESSAGE } from '../thing/thing.constant';
 
 @Injectable()
 export class NotificationService {
@@ -22,10 +25,7 @@ export class NotificationService {
 
   async createExceedThresholdNotification(
     thingId: ObjectId,
-    deviceName: string,
-    parameter: string,
-    value: string,
-    unit: string,
+    dtos: CreateExceedThresholdNotificationDto[],
   ) {
     const session = this.client.startSession();
     try {
@@ -35,25 +35,55 @@ export class NotificationService {
         return manager.userId;
       });
 
-      const notification = new NotificationModel();
-      notification.title = TITLE.EXCEED_THRESHOLD;
-      notification.content = this.generateContent(
-        CONTENT.EXCEED_THRESHOLD,
-        thingId.toString(),
-        deviceName,
-        parameter,
-        value,
-        unit,
-      );
-      notification.type = TYPE.WARNING;
-      notification.receivers = receivers.map((receiver) => {
-        return {
-          userId: receiver,
-          readAt: null,
-        };
-      });
+      const notifications: NotificationModel[] = dtos
+        .map((dto) => {
+          return dto.parameters.map((parameter) => {
+            if (parameter.message === PARAMETER_MESSAGE.ABOVE_STANDARD) {
+              const notification = new NotificationModel();
+              notification.title = TITLE.EXCEED_THRESHOLD;
+              notification.content = this.generateContent(
+                CONTENT.ABOVE_STANDARD,
+                thingId.toString(),
+                dto.deviceName,
+                parameter.name,
+                parameter.value,
+                parameter.unit,
+              );
+              notification.type = parameter.type;
+              notification.receivers = receivers.map((receiver) => {
+                return {
+                  userId: receiver,
+                  readAt: null,
+                };
+              });
+              return notification;
+            } else if (parameter.message === PARAMETER_MESSAGE.BELOW_STANDARD) {
+              const notification = new NotificationModel();
+              notification.title = TITLE.EXCEED_THRESHOLD;
+              notification.content = this.generateContent(
+                CONTENT.BELOW_STANDARD,
+                thingId.toString(),
+                dto.deviceName,
+                parameter.name,
+                parameter.value,
+                parameter.unit,
+              );
+              notification.type = parameter.type;
+              notification.receivers = receivers.map((receiver) => {
+                return {
+                  userId: receiver,
+                  readAt: null,
+                };
+              });
+              return notification;
+            } else {
+              return null;
+            }
+          });
+        })
+        .flat(1);
 
-      await this.notificationCollection.insertOne(notification, { session });
+      await this.notificationCollection.insertMany(notifications, { session });
 
       //TODO: publish socket
 
@@ -164,6 +194,31 @@ export class NotificationService {
       totalUnread,
     };
     return response;
+  }
+
+  async classifyTypeAndTitle(thingId: ObjectId, message: ThingData) {
+    const devices = await this.thingService.listDevices(thingId);
+
+    const validateParameterInfo = this.thingService.validateThingData(
+      message,
+      devices,
+    );
+    const deviceParameterStandardInfo = validateParameterInfo.map((device) => {
+      const standardInfo = device.parameterStandards.map((reportStandard) => {
+        if (reportStandard['message'] === PARAMETER_MESSAGE.STANDARD) {
+          return;
+        }
+        const exceedThresholdInfo = new CreateExceedThresholdNotificationDto();
+        exceedThresholdInfo.deviceName = reportStandard.name;
+        exceedThresholdInfo.parameter = reportStandard.name;
+        exceedThresholdInfo.value = reportStandard['value'];
+        exceedThresholdInfo.unit = reportStandard.unit;
+        exceedThresholdInfo.message = reportStandard['message'];
+        exceedThresholdInfo.type = reportStandard['type'];
+        return exceedThresholdInfo;
+      });
+      return standardInfo;
+    });
   }
 
   generateContent(content: string, ...args: string[]) {

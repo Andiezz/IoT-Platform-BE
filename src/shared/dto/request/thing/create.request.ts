@@ -8,7 +8,7 @@ import {
   IsObject,
   IsOptional
 } from 'class-validator';
-import { DEVICE_STATUS } from 'src/shared/models/device.model';
+import { DEVICE_STATUS } from 'src/shared/models/thing.model';
 
 class ParameterStandardDto {
   @ApiProperty()
