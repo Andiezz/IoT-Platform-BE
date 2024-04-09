@@ -1,14 +1,13 @@
 import {
   BadRequestException,
-  Body,
   Controller,
   Get,
   Param,
-  Post,
   Put,
   Query,
+  HttpCode,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { User } from 'src/decorators/user.decorator';
 import { UserModel } from 'src/shared/models/user.model';
 import { ListNotificationDto } from 'src/shared/dto/request/notification/list.request';
@@ -22,6 +21,8 @@ export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Get('view')
+  @ApiBearerAuth()
+  @HttpCode(200)
   public async listNotifications(
     @Query(NormalizeListNotificationPipe) query: ListNotificationDto,
     @User() user: UserModel,
@@ -34,6 +35,8 @@ export class NotificationController {
   }
 
   @Put('update/:notificationId')
+  @ApiBearerAuth()
+  @HttpCode(200)
   async updateOne(
     @Param('notificationId') notificationId: string,
     @User() user: UserModel,

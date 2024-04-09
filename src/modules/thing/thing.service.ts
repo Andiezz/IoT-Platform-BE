@@ -37,6 +37,7 @@ import { findRelative } from 'src/shared/utils/find-relative.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
 import { PARAMETER_MESSAGE, PARAMETER_NAME } from './thing.constant';
 import { TYPE } from '../notification/template-notification';
+import { Parameter } from 'src/shared/dto/request/notification/create.request';
 
 @Injectable()
 export class ThingService {
@@ -501,16 +502,16 @@ export class ThingService {
   }
 
   public async listDevices(thingId: ObjectId, user?: UserModel) {
+    const match = {};
+    match['_id'] = thingId;
+    user && (match['managers.userId'] = user._id);
     const thing = (await this.thingCollection
       .aggregate([
         {
-          $match: {
-            _id: thingId,
-            'managers.userId': user?._id,
-          },
+          $match: match,
         },
         {
-          $projection: {
+          $project: {
             devices: 1,
           },
         },
@@ -620,7 +621,7 @@ export class ThingService {
     devices.forEach((device) => {
       device.parameterStandards.forEach((parameter, j) => {
         const value = data[`${parameter.name.toLowerCase()}`];
-        if(!value) {
+        if (!value) {
           return;
         }
 

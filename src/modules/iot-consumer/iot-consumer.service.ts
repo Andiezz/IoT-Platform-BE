@@ -2,6 +2,7 @@ import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import {
   DeviceStatusMessage,
   IIotMessageProcessor,
+  MqttPayload,
   ThingData,
 } from './iot-consumer.interface';
 import { ConfigService } from '@nestjs/config';
@@ -45,8 +46,6 @@ export class IotMessageProcessor
       protocolVersion: 5,
     });
 
-    console.log(this.iotClient);
-
     this.subscribe();
   }
 
@@ -64,15 +63,20 @@ export class IotMessageProcessor
     this.iotClient.on('connect', () => {
       this.logger.log('Consumer connected to iot core');
 
-      this.iotClient.subscribe('$aws/events/presence/connected/#', (e) => {
+      this.iotClient.subscribe('presence/connected/#', (e) => {
         this.logError(e);
       });
       this.iotClient.subscribe('$aws/events/presence/disconnected/#', (e) => {
         this.logError(e);
       });
+
+      this.iotClient.subscribe('thing/+/real_time_data', (e) => {
+        this.logError(e);
+      });
     });
 
     this.iotClient.on('message', async (topic: string, message: Buffer) => {
+      this.logger.log(`Received data on ${topic}: ${message.toString()}`);
       await this.process(topic, message);
     });
 
@@ -90,46 +94,64 @@ export class IotMessageProcessor
   private async processThingStatusMessage(
     message: DeviceStatusMessage,
   ): Promise<void> {
+    const thingId = message.clientId.padEnd(24).slice(-24);
     if (message.eventType === 'connected') {
       await this.thingService.updateStatusActive(
-        new ObjectId(message.clientId),
+        new ObjectId(thingId),
       );
     } else if (message.eventType === 'disconnected') {
       await this.thingService.updateStatusInactive(
-        new ObjectId(message.clientId),
+        new ObjectId(thingId),
       );
     }
   }
 
-  private async processTriggerNotification(thingId: ObjectId, message: ThingData) {
+  private async processTriggerNotification(
+    thingId: ObjectId,
+    message: ThingData,
+  ) {
     // check which notification type
-    
+    const createNotificationDtos =
+      await this.notificationService.classifyTypeAndTitle(thingId, message);
 
+    // create notifiaction and publish socket
+    await this.notificationService.createExceedThresholdNotification(
+      thingId,
+      createNotificationDtos,
+    );
   }
 
   public async process(topic: string, message: Buffer): Promise<void> {
     const iotCfg: IotConsumerConfiguration = this.cfg.getOrThrow('iotConsumer');
-    const jsonMessage: DeviceStatusMessage = JSON.parse(
-      message.toLocaleString(),
-    );
-    // skip messages from this client
-    if (jsonMessage.clientId !== iotCfg.clientId) {
-      return;
-    }
+    const jsonMessage: MqttPayload = JSON.parse(message.toLocaleString());
 
     if (
       topic.includes('presence/connected') ||
       topic.includes('presence/disconnected')
     ) {
+      const deviceStatusMsg: DeviceStatusMessage =
+      jsonMessage as DeviceStatusMessage;
+      // skip messages from this client
+      if (deviceStatusMsg.clientId === iotCfg.clientId) {
+        return;
+      }
+      this.logger.log('Process thing status message ', deviceStatusMsg.clientId);
       //TODO:
       // 1. publish connected message
+
       // 2. change status db
-      await this.processThingStatusMessage(jsonMessage);
+      await this.processThingStatusMessage(deviceStatusMsg);
     } else if (/^thing\/([a-z0-9]+)\/real_time_data$/.test(topic)) {
+      const thingData: ThingData = jsonMessage as ThingData;
       //TODO:
-      // process real time data, publish socket
-      // 1. update device status
-      // 2. trigger notification
+      // extract thing id from topic
+      const params = topic.split('/');
+      this.logger.log('Process real time data thing ', params[1]);
+
+      // 1. trigger notification
+      await this.processTriggerNotification(new ObjectId(params[1]), thingData);
+
+      // 2. publish real time data socket
     }
   }
 }

@@ -2,6 +2,7 @@
 
 import { AuthenticationController } from './authentication/authentication.controller';
 import { HealthController } from './health.controller';
+import { NotificationController } from './notification/notification.controller';
 import { SystemManagementController } from './system-management/system-management.controller';
 import { ThingController } from './thing/thing.controller';
 import { UserManagementController } from './user-management/user-management.controller';
@@ -14,4 +15,5 @@ export default [
   UserManagementController,
   UserController,
   ThingController,
-]
+  NotificationController,
+];

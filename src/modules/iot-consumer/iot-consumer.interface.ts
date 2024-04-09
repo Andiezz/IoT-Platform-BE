@@ -31,3 +31,5 @@ export interface ThingData {
   nh4: number;
   aceton: number;
 }
+
+export type MqttPayload = DeviceStatusMessage | ThingData;

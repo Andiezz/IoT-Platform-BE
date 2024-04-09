@@ -9,8 +9,12 @@ import { ListNotificationDto } from 'src/shared/dto/request/notification/list.re
 import { UserModel } from 'src/shared/models/user.model';
 import { UpdateNotificationDto } from 'src/shared/dto/request/notification/update.request';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import { CreateExceedThresholdNotificationDto } from 'src/shared/dto/request/notification/create.request';
+import {
+  CreateExceedThresholdNotificationDto,
+  Parameter,
+} from 'src/shared/dto/request/notification/create.request';
 import { PARAMETER_MESSAGE } from '../thing/thing.constant';
+import { concatenatePropertyHasValueStringInObjectArray } from 'src/shared/utils/array.utils';
 
 @Injectable()
 export class NotificationService {
@@ -35,53 +39,98 @@ export class NotificationService {
         return manager.userId;
       });
 
-      const notifications: NotificationModel[] = dtos
-        .map((dto) => {
-          return dto.parameters.map((parameter) => {
-            if (parameter.message === PARAMETER_MESSAGE.ABOVE_STANDARD) {
-              const notification = new NotificationModel();
-              notification.title = TITLE.EXCEED_THRESHOLD;
-              notification.content = this.generateContent(
-                CONTENT.ABOVE_STANDARD,
-                thingId.toString(),
-                dto.deviceName,
-                parameter.name,
-                parameter.value,
-                parameter.unit,
-              );
-              notification.type = parameter.type;
-              notification.receivers = receivers.map((receiver) => {
-                return {
-                  userId: receiver,
-                  readAt: null,
-                };
-              });
-              return notification;
-            } else if (parameter.message === PARAMETER_MESSAGE.BELOW_STANDARD) {
-              const notification = new NotificationModel();
-              notification.title = TITLE.EXCEED_THRESHOLD;
-              notification.content = this.generateContent(
-                CONTENT.BELOW_STANDARD,
-                thingId.toString(),
-                dto.deviceName,
-                parameter.name,
-                parameter.value,
-                parameter.unit,
-              );
-              notification.type = parameter.type;
-              notification.receivers = receivers.map((receiver) => {
-                return {
-                  userId: receiver,
-                  readAt: null,
-                };
-              });
-              return notification;
-            } else {
-              return null;
-            }
+      const notifications: NotificationModel[] = [];
+      dtos.forEach((dto) => {
+        const aboveStandardParameters = [];
+        const belowStandardParameters = [];
+        dto.parameters.forEach((parameter) => {
+          // check parameter
+          if (!parameter?.value) {
+            return;
+          }
+          if (parameter.message === PARAMETER_MESSAGE.ABOVE_STANDARD) {
+            aboveStandardParameters.push({
+              name: parameter.name,
+              value: parameter.value,
+              unit: parameter.unit,
+            });
+          } else if (parameter.message === PARAMETER_MESSAGE.BELOW_STANDARD) {
+            belowStandardParameters.push({
+              name: parameter.name,
+              value: parameter.value,
+              unit: parameter.unit,
+            });
+          }
+        });
+
+        // create notification for corresponding parameter message
+        if (aboveStandardParameters.length > 0) {
+          const concatenatedParameterName =
+            concatenatePropertyHasValueStringInObjectArray(
+              aboveStandardParameters,
+              ', ',
+              'name',
+            );
+          const concatenatedParameterValue =
+            concatenatePropertyHasValueStringInObjectArray(
+              aboveStandardParameters,
+              ', ',
+              'value',
+              'unit',
+            );
+          const aboveStandardNotification = new NotificationModel();
+          aboveStandardNotification.title = TITLE.EXCEED_THRESHOLD;
+          aboveStandardNotification.content = this.generateContent(
+            CONTENT.ABOVE_STANDARD,
+            thingId.toString(),
+            dto.deviceName,
+            concatenatedParameterName,
+            concatenatedParameterValue,
+          );
+          aboveStandardNotification.type = TYPE.WARNING;
+          aboveStandardNotification.receivers = receivers.map((receiver) => {
+            return {
+              userId: receiver,
+              readAt: null,
+            };
           });
-        })
-        .flat(1);
+          notifications.push(aboveStandardNotification);
+        }
+
+        if (belowStandardParameters.length > 0) {
+          const belowStandardNotification = new NotificationModel();
+          belowStandardNotification.title = TITLE.EXCEED_THRESHOLD;
+          belowStandardNotification.content = this.generateContent(
+            CONTENT.BELOW_STANDARD,
+            thingId.toString(),
+            dto.deviceName,
+            concatenatePropertyHasValueStringInObjectArray(
+              belowStandardParameters,
+              ', ',
+              'name',
+            ),
+            concatenatePropertyHasValueStringInObjectArray(
+              belowStandardParameters,
+              ', ',
+              'value',
+              'unit',
+            ),
+          );
+          belowStandardNotification.type = TYPE.WARNING;
+          belowStandardNotification.receivers = receivers.map((receiver) => {
+            return {
+              userId: receiver,
+              readAt: null,
+            };
+          });
+          notifications.push(belowStandardNotification);
+        }
+      });
+
+      if (notifications.length === 0) {
+        this.logger.log('no-notification-need');
+        return;
+      }
 
       await this.notificationCollection.insertMany(notifications, { session });
 
@@ -106,16 +155,18 @@ export class NotificationService {
       session.startTransaction();
       await this.notificationCollection.updateMany(
         {
-          $match: {
-            _id: notificationId,
-            $expr: { $in: [user._id, '$receivers.userId'] },
-          },
+          _id: notificationId,
+          'receivers.userId': user._id,
         },
         {
-          $set: { readAt: new Date() },
+          $set: {
+            'receivers.$.readAt': new Date(),
+          },
         },
         { session },
       );
+
+      await session.commitTransaction();
 
       return 'update-notification-success';
     } catch (error) {
@@ -134,13 +185,17 @@ export class NotificationService {
       session.startTransaction();
       await this.notificationCollection.updateMany(
         {
-          $expr: { $in: [user._id, '$receivers.userId'] },
+          'receivers.userId': user._id,
         },
         {
-          $set: { readAt: new Date() },
+          $set: {
+            'receivers.$.readAt': new Date(),
+          },
         },
         { session },
       );
+
+      await session.commitTransaction();
 
       return 'update-all-notification-success';
     } catch (error) {
@@ -157,7 +212,7 @@ export class NotificationService {
     { skip, page, limit, sortBy, sortOrder }: ListNotificationDto,
     user: UserModel,
   ) {
-    const notifications = (await this.notificationCollection
+    const notifications = await this.notificationCollection
       .aggregate([
         {
           $match: {
@@ -183,11 +238,15 @@ export class NotificationService {
         },
         { $unset: 'totalCount' },
       ])
-      .toArray()) as NotificationModel[][];
+      .toArray();
 
-    const totalUnread = notifications[0].filter((notification) => {
-      return notification?.readAt === null;
-    }).length;
+    console.log(notifications);
+
+    const totalUnread = notifications[0]?.paginatedResults.filter(
+      (notification) => {
+        return notification?.readAt === null;
+      },
+    ).length;
 
     const response = {
       ...notifications[0],
@@ -199,31 +258,25 @@ export class NotificationService {
   async classifyTypeAndTitle(thingId: ObjectId, message: ThingData) {
     const devices = await this.thingService.listDevices(thingId);
 
-    const validateParameterInfo = this.thingService.validateThingData(
+    const validateParameterDevices = this.thingService.validateThingData(
       message,
       devices,
     );
-    const deviceParameterStandardInfo = validateParameterInfo.map((device) => {
-      const standardInfo = device.parameterStandards.map((reportStandard) => {
-        if (reportStandard['message'] === PARAMETER_MESSAGE.STANDARD) {
-          return;
-        }
-        const exceedThresholdInfo = new CreateExceedThresholdNotificationDto();
-        exceedThresholdInfo.deviceName = reportStandard.name;
-        exceedThresholdInfo.parameter = reportStandard.name;
-        exceedThresholdInfo.value = reportStandard['value'];
-        exceedThresholdInfo.unit = reportStandard.unit;
-        exceedThresholdInfo.message = reportStandard['message'];
-        exceedThresholdInfo.type = reportStandard['type'];
-        return exceedThresholdInfo;
-      });
-      return standardInfo;
+    const createNotificationDtos = validateParameterDevices.map((device) => {
+      const createNotificationDto = new CreateExceedThresholdNotificationDto();
+      createNotificationDto.deviceName = device.name;
+      createNotificationDto.parameters =
+        device.parameterStandards as Parameter[];
+      return createNotificationDto;
     });
+
+    return createNotificationDtos;
   }
 
   generateContent(content: string, ...args: string[]) {
+    console.log(args);
     args.forEach((arg, index) => {
-      content.replace(`$${index + 1}`, arg);
+      content = content.replace(`$${index + 1}`, arg);
     });
     return content;
   }
