@@ -143,14 +143,14 @@ export class IotMessageProcessor
       await this.processThingStatusMessage(deviceStatusMsg);
     } else if (/^thing\/([a-z0-9]+)\/real_time_data$/.test(topic)) {
       const thingData: ThingData = jsonMessage as ThingData;
-      //TODO:
       // extract thing id from topic
       const params = topic.split('/');
       this.logger.log('Process real time data thing ', params[1]);
-
+      
       // 1. trigger notification
       await this.processTriggerNotification(new ObjectId(params[1]), thingData);
-
+      
+      //TODO:
       // 2. publish real time data socket
     }
   }
