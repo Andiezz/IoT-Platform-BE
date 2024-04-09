@@ -19,6 +19,8 @@ export interface DeviceStatusMessage {
 }
 
 export interface ThingData {
+  thingId: string;
+  timestamp: string;
   pm25: number;
   temperature: number;
   humidity: number;
