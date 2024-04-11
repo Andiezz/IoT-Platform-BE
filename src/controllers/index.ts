@@ -1,6 +1,7 @@
 // Export all controllers as single array to import in App.module.
 
 import { AuthenticationController } from './authentication/authentication.controller';
+import { DashboardController } from './dashboard/dashboard.controller';
 import { HealthController } from './health.controller';
 import { NotificationController } from './notification/notification.controller';
 import { SystemManagementController } from './system-management/system-management.controller';
@@ -16,4 +17,5 @@ export default [
   UserController,
   ThingController,
   NotificationController,
+  DashboardController,
 ];

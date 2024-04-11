@@ -240,8 +240,6 @@ export class NotificationService {
       ])
       .toArray();
 
-    console.log(notifications);
-
     const totalUnread = notifications[0]?.paginatedResults.filter(
       (notification) => {
         return notification?.readAt === null;
@@ -253,6 +251,20 @@ export class NotificationService {
       totalUnread,
     };
     return response;
+  }
+
+  async getThingWarnings(thingId: ObjectId) {
+    const notifications = await this.notificationCollection
+      .aggregate([
+        {
+          $match: {
+            content: { $regex: thingId.toString() },
+          },
+        },
+      ])
+      .toArray();
+
+    return notifications[0];
   }
 
   async classifyTypeAndTitle(thingId: ObjectId, message: ThingData) {

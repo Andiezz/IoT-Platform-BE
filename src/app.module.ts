@@ -32,6 +32,7 @@ import { HttpModule } from '@nestjs/axios';
 import { IotConsumerModule } from './modules/iot-consumer/iot-consumer.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { SocketModule } from './modules/socket/socket.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { SocketModule } from './modules/socket/socket.module';
     IotConsumerModule,
     NotificationModule,
     SocketModule,
+    DashboardModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local'],

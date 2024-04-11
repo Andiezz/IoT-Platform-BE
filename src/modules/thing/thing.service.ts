@@ -270,167 +270,189 @@ export class ThingService {
     thingId: ObjectId,
     user: UserModel,
   ): Promise<SaveThingResponse> {
-    const thing = await this.isExist({ _id: thingId });
-    if (!checkValueExistInObjectArray(thing.managers, 'userId', user._id)) {
-      throw new BadRequestException('no-permission');
-    }
-    const certificate = thing?.certificate;
-    const thingObjectIdString = thingId.toString();
-    if (certificate) {
-      await this.awsService.deleteCert(
-        certificate.certId,
-        certificate.certArn,
+    const session = this.client.startSession();
+    try {
+      session.startTransaction();
+      const thing = await this.isExist({ _id: thingId });
+      if (!checkValueExistInObjectArray(thing.managers, 'userId', user._id)) {
+        throw new BadRequestException('no-permission');
+      }
+      const certificate = thing?.certificate;
+      const thingObjectIdString = thingId.toString();
+      if (certificate) {
+        await this.awsService.deleteCert(
+          certificate.certId,
+          certificate.certArn,
+          thingObjectIdString,
+        );
+      }
+
+      const newCert = await this.awsService.createCertificate(
         thingObjectIdString,
       );
-    }
 
-    const newCert = await this.awsService.createCertificate(
-      thingObjectIdString,
-    );
+      const model = new Certificate();
+      model.certArn = newCert.certArn;
+      model.certId = newCert.certId;
 
-    const model = new Certificate();
-    model.certArn = newCert.certArn;
-    model.certId = newCert.certId;
-
-    await this.thingCollection.updateOne(
-      {
-        _id: thingId,
-      },
-      {
-        $set: {
-          certificate: model,
-          updatedBy: user._id,
-          updatedOn: new Date(),
+      await this.thingCollection.updateOne(
+        {
+          _id: thingId,
         },
-      },
-    );
+        {
+          $set: {
+            certificate: model,
+            updatedBy: user._id,
+            updatedOn: new Date(),
+          },
+        },
+      );
 
-    const streamFiles: Array<CertificateFile> = [
-      {
-        file: Buffer.from(newCert.awsRootCaPem, 'utf-8'),
-        name: `${thingId.toString()}-root.pem`,
-        type: 'root-ca',
-      },
-      {
-        file: Buffer.from(newCert.thingCertPem, 'utf-8'),
-        name: `${thingId.toString()}-certificate.pem.crt`,
-        type: 'device-certificatie',
-      },
-      {
-        file: Buffer.from(newCert.keyPair.privateKey, 'utf-8'),
-        name: `${thingId.toString()}-private.pem.key`,
-        type: 'private-key',
-      },
-      {
-        file: Buffer.from(newCert.keyPair.publicKey, 'utf-8'),
-        name: `${thingId.toString()}-public.pem.key`,
-        type: 'public-key',
-      },
-    ];
-    const response = new SaveThingResponse();
-    response.msg = 'thing-certificate-update-success';
-    response.files = streamFiles;
-    response.id = thingId.toString();
-    return response;
+      const streamFiles: Array<CertificateFile> = [
+        {
+          file: Buffer.from(newCert.awsRootCaPem, 'utf-8'),
+          name: `${thingId.toString()}-root.pem`,
+          type: 'root-ca',
+        },
+        {
+          file: Buffer.from(newCert.thingCertPem, 'utf-8'),
+          name: `${thingId.toString()}-certificate.pem.crt`,
+          type: 'device-certificatie',
+        },
+        {
+          file: Buffer.from(newCert.keyPair.privateKey, 'utf-8'),
+          name: `${thingId.toString()}-private.pem.key`,
+          type: 'private-key',
+        },
+        {
+          file: Buffer.from(newCert.keyPair.publicKey, 'utf-8'),
+          name: `${thingId.toString()}-public.pem.key`,
+          type: 'public-key',
+        },
+      ];
+      const response = new SaveThingResponse();
+      response.msg = 'thing-certificate-update-success';
+      response.files = streamFiles;
+      response.id = thingId.toString();
+      return response;
+    } catch (error) {
+      this.logger.error(error);
+      session.inTransaction() && (await session.abortTransaction());
+      await session.endSession();
+      throw new BadRequestException(error.message);
+    } finally {
+      session.inTransaction() && (await session.endSession());
+    }
   }
 
   public async detail(thingId: ObjectId, user: UserModel) {
-    const match = { $and: [] };
-    match['$and'].push({ _id: thingId, isDeleted: false });
-    if (user.role !== ROLE.ADMIN) {
-      match['$and'].push({ 'managers.userId': user._id });
-    }
+    const session = this.client.startSession();
+    try {
+      const match = { $and: [] };
+      match['$and'].push({ _id: thingId, isDeleted: false });
+      if (user.role !== ROLE.ADMIN) {
+        match['$and'].push({ 'managers.userId': user._id });
+      }
 
-    const thing = await this.thingCollection
-      .aggregate([
-        { $match: match },
-        {
-          $lookup: {
-            from: NormalCollection.USER,
-            localField: 'managers.userId',
-            foreignField: '_id',
-            pipeline: [
-              {
-                $project: {
-                  ...EXCULDE_BASE_MODEL,
+      const thing = await this.thingCollection
+        .aggregate([
+          { $match: match },
+          {
+            $lookup: {
+              from: NormalCollection.USER,
+              localField: 'managers.userId',
+              foreignField: '_id',
+              pipeline: [
+                {
+                  $project: {
+                    ...EXCULDE_BASE_MODEL,
+                  },
                 },
-              },
-            ],
-            as: 'managers.user',
+              ],
+              as: 'managers.user',
+            },
           },
-        },
-      ])
-      .toArray();
+        ])
+        .toArray();
 
-    if (!thing.length) throw new NotFoundException('thing-not-found');
-    return thing[0];
+      if (!thing.length) throw new NotFoundException('thing-not-found');
+      return thing[0];
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error.message);
+    }
   }
 
   public async list(
     { skip, page, limit, q, sortBy, sortOrder, status }: ListThingDto,
     user: UserModel,
   ) {
-    const match = { $and: [] };
-    if (user.role !== ROLE.ADMIN) {
-      match['$and'].push({ 'managers.userId': user._id });
-    }
+    try {
+      const match = { $and: [] };
+      if (user.role !== ROLE.ADMIN) {
+        match['$and'].push({ 'managers.userId': user._id });
+      }
 
-    if (q)
-      match['$and'].push({
-        $or: [
-          { 'managers.firstName': findRelative(q) },
-          { 'managers.lastName': findRelative(q) },
-          { 'managers.email': findRelative(q) },
-          { 'managers.fullName': findRelative(q) },
-          { name: findRelative(q) },
-          { information: findRelative(q) },
-          { 'location.name': findRelative(q) },
-          { 'location.address': findRelative(q) },
-        ],
-      });
+      if (q)
+        match['$and'].push({
+          $or: [
+            { 'managers.firstName': findRelative(q) },
+            { 'managers.lastName': findRelative(q) },
+            { 'managers.email': findRelative(q) },
+            { 'managers.fullName': findRelative(q) },
+            { name: findRelative(q) },
+            { information: findRelative(q) },
+            { 'location.name': findRelative(q) },
+            { 'location.address': findRelative(q) },
+          ],
+        });
 
-    if (status) match['status'] = status;
+      if (status) match['status'] = status;
 
-    !match['$and'].length && delete match['$and'];
+      !match['$and'].length && delete match['$and'];
 
-    const things = await this.thingCollection
-      .aggregate([
-        {
-          $lookup: {
-            from: NormalCollection.USER,
-            localField: 'managers.userId',
-            foreignField: '_id',
-            pipeline: [
-              {
-                $project: {
-                  ...EXCULDE_BASE_MODEL,
+      const things = await this.thingCollection
+        .aggregate([
+          {
+            $lookup: {
+              from: NormalCollection.USER,
+              localField: 'managers.userId',
+              foreignField: '_id',
+              pipeline: [
+                {
+                  $project: {
+                    ...EXCULDE_BASE_MODEL,
+                  },
                 },
-              },
-            ],
-            as: 'managers.user',
+              ],
+              as: 'managers.user',
+            },
           },
-        },
-        { $match: match },
-        { $sort: { [`${sortBy}`]: sortOrder } },
-        {
-          $facet: {
-            paginatedResults: [{ $skip: skip }, { $limit: limit }],
-            totalCount: [{ $count: 'count' }],
+          { $match: match },
+          { $sort: { [`${sortBy}`]: sortOrder } },
+          {
+            $facet: {
+              paginatedResults: [{ $skip: skip }, { $limit: limit }],
+              totalCount: [{ $count: 'count' }],
+            },
           },
-        },
-        {
-          $set: {
-            page,
-            limit,
-            total: { $first: '$totalCount.count' },
-            current: { $size: '$paginatedResults' },
+          {
+            $set: {
+              page,
+              limit,
+              total: { $first: '$totalCount.count' },
+              current: { $size: '$paginatedResults' },
+            },
           },
-        },
-        { $unset: 'totalCount' },
-      ])
-      .toArray();
+          { $unset: 'totalCount' },
+        ])
+        .toArray();
 
-    return things[0];
+      return things[0];
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error.message);
+    }
   }
 
   public async updateAssociatedDevice(
@@ -502,27 +524,32 @@ export class ThingService {
   }
 
   public async listDevices(thingId: ObjectId, user?: UserModel) {
-    const match = {};
-    match['_id'] = thingId;
-    user && (match['managers.userId'] = user._id);
-    const thing = (await this.thingCollection
-      .aggregate([
-        {
-          $match: match,
-        },
-        {
-          $project: {
-            devices: 1,
+    try {
+      const match = {};
+      match['_id'] = thingId;
+      user && (match['managers.userId'] = user._id);
+      const thing = (await this.thingCollection
+        .aggregate([
+          {
+            $match: match,
           },
-        },
-      ])
-      .toArray()) as ThingModel[];
+          {
+            $project: {
+              devices: 1,
+            },
+          },
+        ])
+        .toArray()) as ThingModel[];
 
-    if (thing.length === 0) {
-      throw new NotFoundException('thing-not-exist');
+      if (thing.length === 0) {
+        throw new NotFoundException('thing-not-exist');
+      }
+
+      return thing[0].devices;
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error.message);
     }
-
-    return thing[0].devices;
   }
 
   public async updateStatusActive(thingId: ObjectId) {
