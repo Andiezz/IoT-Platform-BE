@@ -14,6 +14,9 @@ import { GetDashboardDto } from 'src/shared/dto/request/dashboard/get-dashboard.
 import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 import { NotificationService } from '../notification/notification.service';
 import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
+import { ThingModel } from 'src/shared/models/thing.model';
+import { PARAMETER_NAME, PARAMETER_WEIGHT } from '../thing/thing.constant';
+import { checkValueExistInObjectArray } from 'src/shared/utils/array.utils';
 
 @Injectable()
 export class DashboardService {
@@ -30,9 +33,60 @@ export class DashboardService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  // TODO:
-  public async getDashboard(getDashboardDto: GetDashboardDto, user: UserModel) {
-    // validate user permissions to get thing data
+  public async getDashboard(
+    thingId: ObjectId,
+    getDashboardDto: GetDashboardDto,
+    user: UserModel,
+  ) {
+    try {
+      const { from, to } = getDashboardDto;
+      // I. Validate data and permissions
+      // I.1 Validate query
+      if (from > to) {
+        throw new BadRequestException('bad-from-to-query');
+      }
+
+      // I.2 Validate thing and thing owner
+      const thing = await this.thingService.isExist({ _id: thingId });
+      if (!checkValueExistInObjectArray(thing.managers, 'userId', user._id)) {
+        throw new BadRequestException('no-permission');
+      }
+
+      // II. Get dashboard info
+      // II.1 Get timeseries data, thing detail, thing warning
+      const getTimeseriesDataPromise = this.getTimeseriesData(
+        thingId,
+        getDashboardDto,
+      );
+
+      // II.2 Get thing detail
+      const getThingDetailPromise = this.getThingDetail(thingId, user);
+
+      // II.3 Get thing warning
+      const getThingWarningPromise = this.getThingWarning(thingId);
+
+      const [timeseriesData, thingDetail, thingWarning] = await Promise.all([
+        getTimeseriesDataPromise,
+        getThingDetailPromise,
+        getThingWarningPromise,
+      ]);
+
+      const qualityReport = await this.getQualityReport(
+        thingId,
+        getDashboardDto,
+        thingDetail as ThingModel,
+      );
+
+      return {
+        timeseriesData,
+        thingWarning,
+        thingDetail,
+        qualityReport,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error.message);
+    }
   }
 
   public async getTimeseriesData(
@@ -52,7 +106,7 @@ export class DashboardService {
           $lte: to,
         });
 
-      let formatDate;
+      let formatDate: string;
       switch (type) {
         case CHART_TYPE.DAY:
           formatDate = '%H';
@@ -106,9 +160,14 @@ export class DashboardService {
         {
           $unset: ['_id'],
         },
+        {
+          $sort: {
+            time: 1,
+          },
+        },
       ];
 
-      const timeseriesData = await db
+      const timeseriesData = (await db
         .collection(`${thingId.toString()}_timeseries_data`)
         .aggregate([
           {
@@ -117,7 +176,7 @@ export class DashboardService {
           ...groupPipeline,
           ...setPipeline,
         ])
-        .toArray() as TimeseriesData[];
+        .toArray()) as TimeseriesData[];
 
       return timeseriesData;
     } catch (error) {
@@ -126,8 +185,64 @@ export class DashboardService {
     }
   }
 
-  public async getQualityReport(thingId: ObjectId, user: UserModel) {
-    // define quality thresholds standard
+  public async getQualityReport(
+    thingId: ObjectId,
+    getDashboardDto: GetDashboardDto,
+    thing: ThingModel,
+  ) {
+    try {
+      const db = this.client.db(this.cfg.getOrThrow('database').dbName);
+      const { from, to } = getDashboardDto;
+      // generate query parameters
+      const match = {};
+      match['metadata.thingId'] = thingId.toString();
+      from &&
+        to &&
+        (match['timestamp'] = {
+          $gte: from,
+          $lte: to,
+        });
+
+      const groupPipeline = [
+        {
+          $group: {
+            _id: null,
+            co: { $avg: '$co' },
+            toluen: { $avg: '$toluen' },
+            alcohol: { $avg: '$alcohol' },
+            ch4: { $avg: '$ch4' },
+            aceton: { $avg: '$aceton' },
+            dustDensity: { $avg: '$dustDensity' },
+            co2: { $avg: '$co2' },
+            humidity: { $avg: '$humidity' },
+            lpg: { $avg: '$lpg' },
+            temperature: { $avg: '$temperature' },
+            nh4: { $avg: '$nh4' },
+            count: { $sum: 1 },
+          },
+        },
+      ];
+
+      const timeseriesData = (await db
+        .collection(`${thingId.toString()}_timeseries_data`)
+        .aggregate([
+          {
+            $match: match,
+          },
+          ...groupPipeline,
+        ])
+        .toArray()) as TimeseriesData[];
+
+      const iaqResult = this.calculateReport(timeseriesData[0], thing);
+
+      return {
+        iaqResult,
+        timeseriesData,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error.message);
+    }
   }
 
   public async getThingWarning(thingId: ObjectId) {
@@ -148,5 +263,63 @@ export class DashboardService {
       this.logger.error(error);
       throw new BadRequestException(error.message);
     }
+  }
+
+  public calculateReport(timeseriesData: TimeseriesData, thing: ThingModel) {
+    // get parameter standard
+    const parameterStandards = thing.devices
+      .map((device) => {
+        return device.parameterStandards.map((parameter) => {
+          return parameter;
+        });
+      })
+      .flat(1);
+
+    // evaluate quality
+    let qualityResult = 0;
+    let tVOC = 0;
+    const acceptableSubstances = [];
+    const unAcceptableSubstances = [];
+    const tVOCSubstances = [];
+    parameterStandards.forEach((parameterStandard, i) => {
+      const { name, min, max } = parameterStandard;
+      if ((min !== 0 && !min) || !max) {
+        return;
+      }
+      const timeseriesFieldName = name.toLowerCase().replace(' ', '');
+      const value = timeseriesData[`${timeseriesFieldName}`];
+
+      // evaluate tVOC
+      if (
+        [
+          PARAMETER_NAME.Aceton,
+          PARAMETER_NAME.Alcohol,
+          PARAMETER_NAME.LPG,
+          PARAMETER_NAME.Toluen,
+        ].includes(name)
+      ) {
+        tVOCSubstances.push(parameterStandard);
+        tVOC += value;
+        return;
+      }
+
+      if (value < min || value > max) {
+        qualityResult += PARAMETER_WEIGHT[`${timeseriesFieldName}`];
+        unAcceptableSubstances.push(parameterStandard);
+        return;
+      }
+
+      if (i === parameterStandards.length - 1 && tVOC > PARAMETER_WEIGHT.tvoc) {
+        qualityResult += PARAMETER_WEIGHT.tvoc;
+        unAcceptableSubstances.push(...tVOCSubstances);
+      }
+      acceptableSubstances.push(parameterStandard);
+    });
+
+    return {
+      qualityResult,
+      acceptableSubstances,
+      unAcceptableSubstances,
+    };
   }
 }

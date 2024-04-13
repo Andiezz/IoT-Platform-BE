@@ -1,4 +1,4 @@
-import { CHART_TYPE } from "src/shared/constants/dashboard.constants";
+import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 
 export class TimeseriesData {
   co: number;
@@ -6,7 +6,8 @@ export class TimeseriesData {
   alcohol: number;
   ch4: number;
   aceton: number;
-  dustDensity: number;
+  'pm2.5': number;
+  pm10: number;
   co2: number;
   humidity: number;
   lpg: number;

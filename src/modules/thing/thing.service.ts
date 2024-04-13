@@ -346,7 +346,6 @@ export class ThingService {
   }
 
   public async detail(thingId: ObjectId, user: UserModel) {
-    const session = this.client.startSession();
     try {
       const match = { $and: [] };
       match['$and'].push({ _id: thingId, isDeleted: false });
@@ -370,6 +369,15 @@ export class ThingService {
                 },
               ],
               as: 'managers.user',
+            },
+          },
+          {
+            $project: {
+              createdBy: 0,
+              updatedBy: 0,
+              createdOn: 0,
+              updatedOn: 0,
+              certificate: 0,
             },
           },
         ])

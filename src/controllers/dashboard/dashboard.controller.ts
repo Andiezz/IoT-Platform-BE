@@ -7,6 +7,7 @@ import { UserModel } from 'src/shared/models/user.model';
 import { ApiOkResponseBase } from 'src/shared/utils/swagger.utils';
 import { GetDashboardDto } from 'src/shared/dto/request/dashboard/get-dashboard.request';
 import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
+import { ThingModel } from 'src/shared/models/thing.model';
 
 @ApiTags('dashboard')
 @Controller('dashboard')
@@ -21,9 +22,10 @@ export class DashboardController {
     @Query() getDashboardDto: GetDashboardDto,
     @User() user: UserModel,
   ) {
-    return await this.service.getTimeseriesData(
+    return await this.service.getDashboard(
       new ObjectId(thingId),
       getDashboardDto,
+      user,
     );
   }
 }
