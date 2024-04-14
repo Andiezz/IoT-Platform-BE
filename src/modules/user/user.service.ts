@@ -5,8 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { genSalt, hash } from 'bcrypt';
-import { ClientSession, Collection, Db, MongoClient, ObjectId } from 'mongodb';
-import { AuthenticationService } from 'src/authentication/authentication.service';
+import { ClientSession, Collection, MongoClient, ObjectId } from 'mongodb';
 import { InjectClient, InjectCollection } from 'src/modules/mongodb';
 import { NormalCollection } from 'src/shared/constants/mongo.collection';
 import { ChangePasswordDTO } from 'src/shared/dto/request/user/changePassword.request';
@@ -16,7 +15,6 @@ import { GetProfileResponse } from 'src/shared/dto/response/user/getProfile.resp
 import { UpdateProfileResponse } from 'src/shared/dto/response/user/updateProfile.response';
 import { UserModel } from 'src/shared/models/user.model';
 import { ConfigService } from '@nestjs/config';
-import { AppConfiguration } from 'src/shared/configuration/configuration';
 import { ListUsersDTO } from 'src/shared/dto/request/user/list-users.request';
 import { CREATE_USER_DEFAULT } from 'src/shared/constants/system-management.constants';
 import { EmailDTO } from 'src/shared/dto/request/user/email.request';
@@ -149,12 +147,12 @@ export class UserService {
     const session = this.client.startSession();
     try {
       session.startTransaction();
-      const user: UserModel = (await this.findUser(
+      const user = await this.findUser(
         {
           _id: new ObjectId(userId),
         },
         session,
-      )) as UserModel;
+      );
 
       const response = new GetProfileResponse();
       response.id = user._id.toString();
@@ -204,7 +202,6 @@ export class UserService {
 
       excludeRoles.length &&
         (matchFilters['user_role.role.role'] = { $nin: excludeRoles });
-
 
       const data = await this.userCollection
         .aggregate([
@@ -258,10 +255,9 @@ export class UserService {
     query: Object = {},
     session?: ClientSession,
   ): Promise<UserModel> {
-    const user = (await this.userCollection.findOne(
-      query,
-      { session },
-    )) as UserModel;
+    const user = (await this.userCollection.findOne(query, {
+      session,
+    })) as UserModel;
     if (!user) {
       throw new NotFoundException('no-user-found');
     }
