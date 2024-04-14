@@ -33,7 +33,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!verifyToken) {
         client.disconnect(true);
       }
-      this.logger.log('Connected: ', client.id);
+      this.logger.log('Connected: ' + client.id, 'SocketConnection');
     } catch (err) {
       this.logger.log('err', err);
       client.disconnect(true);

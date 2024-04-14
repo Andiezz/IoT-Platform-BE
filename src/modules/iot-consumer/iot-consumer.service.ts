@@ -11,6 +11,7 @@ import * as mqtt from 'mqtt';
 import { ThingService } from '../thing/thing.service';
 import { ObjectId } from 'mongodb';
 import { NotificationService } from '../notification/notification.service';
+import { SocketGateway } from '../socket/socket.gateway';
 
 @Injectable()
 export class IotMessageProcessor
@@ -24,6 +25,7 @@ export class IotMessageProcessor
     private readonly cfg: ConfigService,
     private readonly thingService: ThingService,
     private readonly notificationService: NotificationService,
+    private readonly socketGateway: SocketGateway,
   ) {
     this.initClient();
   }
@@ -96,13 +98,9 @@ export class IotMessageProcessor
   ): Promise<void> {
     const thingId = message.clientId.padEnd(24).slice(-24);
     if (message.eventType === 'connected') {
-      await this.thingService.updateStatusActive(
-        new ObjectId(thingId),
-      );
+      await this.thingService.updateStatusActive(new ObjectId(thingId));
     } else if (message.eventType === 'disconnected') {
-      await this.thingService.updateStatusInactive(
-        new ObjectId(thingId),
-      );
+      await this.thingService.updateStatusInactive(new ObjectId(thingId));
     }
   }
 
@@ -130,14 +128,24 @@ export class IotMessageProcessor
       topic.includes('presence/disconnected')
     ) {
       const deviceStatusMsg: DeviceStatusMessage =
-      jsonMessage as DeviceStatusMessage;
+        jsonMessage as DeviceStatusMessage;
       // skip messages from this client
       if (deviceStatusMsg.clientId === iotCfg.clientId) {
         return;
       }
-      this.logger.log('Process thing status message ', deviceStatusMsg.clientId);
+      this.logger.log(
+        'Process thing status message ',
+        deviceStatusMsg.clientId,
+      );
       //TODO:
       // 1. publish connected message
+      await this.socketGateway.publish(
+        `/thing-status/${deviceStatusMsg.clientId}`,
+        {
+          channel: 'thing-status-process',
+          data: deviceStatusMsg.eventType,
+        },
+      );
 
       // 2. change status db
       await this.processThingStatusMessage(deviceStatusMsg);
@@ -146,10 +154,10 @@ export class IotMessageProcessor
       // extract thing id from topic
       const params = topic.split('/');
       this.logger.log('Process real time data thing ', params[1]);
-      
+
       // 1. trigger notification
       await this.processTriggerNotification(new ObjectId(params[1]), thingData);
-      
+
       //TODO:
       // 2. publish real time data socket
     }
