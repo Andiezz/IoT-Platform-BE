@@ -15,6 +15,7 @@ import {
 } from 'src/shared/dto/request/notification/create.request';
 import { PARAMETER_MESSAGE } from '../thing/thing.constant';
 import { concatenatePropertyHasValueStringInObjectArray } from 'src/shared/utils/array.utils';
+import { SocketGateway } from '../socket/socket.gateway';
 
 @Injectable()
 export class NotificationService {
@@ -25,6 +26,7 @@ export class NotificationService {
     @InjectClient()
     private readonly client: MongoClient,
     private thingService: ThingService,
+    private readonly socketGateway: SocketGateway,
   ) {}
 
   async createExceedThresholdNotification(
@@ -134,7 +136,11 @@ export class NotificationService {
 
       await this.notificationCollection.insertMany(notifications, { session });
 
-      //TODO: publish socket
+      // publish notification socket
+      await this.socketGateway.publish(`/thing-warning/${thingId.toString()}`, {
+        channel: 'thing-warning-process',
+        data: notifications,
+      });
 
       await session.commitTransaction();
 

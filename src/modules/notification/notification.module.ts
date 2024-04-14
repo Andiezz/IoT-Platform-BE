@@ -4,6 +4,7 @@ import { NormalCollection } from 'src/shared/constants/mongo.collection';
 import { UserModule } from '../user/user.module';
 import { NotificationService } from './notification.service';
 import { ThingModule } from '../thing/thing.module';
+import { SocketModule } from '../socket/socket.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ThingModule } from '../thing/thing.module';
       NormalCollection.USER,
       NormalCollection.NOTIFICATION,
     ]),
+    SocketModule,
   ],
   controllers: [],
   providers: [NotificationService],

@@ -137,7 +137,7 @@ export class IotMessageProcessor
         'Process thing status message ',
         deviceStatusMsg.clientId,
       );
-      //TODO:
+
       // 1. publish connected message
       await this.socketGateway.publish(
         `/thing-status/${deviceStatusMsg.clientId}`,
@@ -158,8 +158,14 @@ export class IotMessageProcessor
       // 1. trigger notification
       await this.processTriggerNotification(new ObjectId(params[1]), thingData);
 
-      //TODO:
       // 2. publish real time data socket
+      await this.socketGateway.publish(
+        `/thing-real-time-data/${params[1]}`,
+        {
+          channel: 'thing-real-time-data-process',
+          data: thingData,
+        },
+      );
     }
   }
 }
