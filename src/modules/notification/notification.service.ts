@@ -273,11 +273,11 @@ export class NotificationService {
     return notifications[0];
   }
 
-  async classifyTypeAndTitle(thingId: ObjectId, message: ThingData) {
+  async classifyTypeAndTitle(thingId: ObjectId, data: ThingData) {
     const devices = await this.thingService.listDevices(thingId);
 
     const validateParameterDevices = this.thingService.validateThingData(
-      message,
+      data,
       devices,
     );
     const createNotificationDtos = validateParameterDevices.map((device) => {

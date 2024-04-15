@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { BaseModel } from './base.model';
+import { ParameterStandardModel } from './parameter-standard.model';
 
 export enum DEVICE_STATUS {
   ACTIVE = 'active',
@@ -7,20 +8,12 @@ export enum DEVICE_STATUS {
   PENDING_SETUP = 'pending-setup',
 }
 
-export class ParameterStandard {
-  public name: string;
-  public unit: string;
-  public min?: number;
-  public max?: number;
-}
-
 export class Device {
   public name: string;
-  public information: string;
   public status: DEVICE_STATUS;
-  public type?: string;
-  public model: string;
-  public parameterStandards: ParameterStandard[];
+  public model: ObjectId;
+  public parameterStandards: ParameterStandardModel[];
+  public parameterStandardDefault: boolean;
 }
 
 export class Location {
@@ -28,7 +21,7 @@ export class Location {
   public address: string;
   public longitude: number;
   public latitude: number;
-};
+}
 
 export class Certificate {
   public certId: string;

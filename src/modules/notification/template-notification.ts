@@ -1,14 +1,10 @@
 export const TITLE = {
-  EXCEED_THRESHOLD: 'Parameter exceed allowed threshold',
+  EXCEED_THRESHOLD: 'Parameter being in warning threshold',
 };
 
 export const CONTENT = {
-  ABOVE_STANDARD: `Thing $1 - Device $2 has the following parameters exceeded the allowed threshold:
-    $3 
-    which is $4 respectively.`,
-  BELOW_STANDARD: `Thing $1 - Device $2 has the following parameters falled behind the allowed threshold:
-    $3 
-    which is $4 respectively.`,
+  ABOVE_STANDARD: `Thing $1 has the following parameters being in warning threshold:
+    $2.`
 };
 
 export const TYPE = {

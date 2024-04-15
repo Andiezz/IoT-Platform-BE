@@ -24,7 +24,6 @@ import {
   Device,
   Location,
   Manager,
-  ParameterStandard,
   ThingModel,
 } from 'src/shared/models/thing.model';
 import { EXCULDE_BASE_MODEL } from 'src/shared/dto/response/constants/exclude-base-model.response';
@@ -35,9 +34,10 @@ import {
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { findRelative } from 'src/shared/utils/find-relative.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import { PARAMETER_MESSAGE, PARAMETER_NAME } from './thing.constant';
+import { PARAMETER_MESSAGE } from './thing.constant';
 import { TYPE } from '../notification/template-notification';
-import { Parameter } from 'src/shared/dto/request/notification/create.request';
+import { ParameterStandardModel } from 'src/shared/models/parameter-standard.model';
+import { DeviceModelService } from '../device-model/device-model.service';
 
 @Injectable()
 export class ThingService {
@@ -49,8 +49,10 @@ export class ThingService {
     private readonly client: MongoClient,
     private readonly cfg: ConfigService,
     private readonly awsService: AwsService,
+    private readonly deviceModelService: DeviceModelService,
   ) {}
 
+  // TODO: Test
   public async create(
     { name, information, location, managers, devices }: SaveThingDto,
     user: UserModel,
@@ -83,26 +85,39 @@ export class ThingService {
       thingModel.updatedBy = user._id;
 
       // II.1 Create devices
-      thingModel.devices = devices.map((device) => {
-        const deviceModel = new Device();
-        deviceModel.name = device.name;
-        deviceModel.information = device.information;
-        deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
-        deviceModel.type = device?.type;
-        deviceModel.model = device.model;
-        deviceModel.parameterStandards = device.parameterStandards.map(
-          (parameterStandard) => {
-            const parameterStandardModel = new ParameterStandard();
-            parameterStandardModel.name = parameterStandard.name;
-            parameterStandardModel.unit = parameterStandard.unit;
-            parameterStandardModel.min = parameterStandard?.min;
-            parameterStandardModel.max = parameterStandard?.max;
-            return parameterStandardModel;
-          },
-        );
+      thingModel.devices = await Promise.all(
+        devices.map(async (device) => {
+          const deviceModel = new Device();
+          deviceModel.name = device.name;
+          deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
+          deviceModel.model = device.model;
+          deviceModel.parameterStandardDefault =
+            device.parameterStandardDefault;
 
-        return deviceModel;
-      });
+          // parameter standard custom
+          if (deviceModel.parameterStandardDefault === false) {
+            deviceModel.parameterStandards = device.parameterStandards.map(
+              (parameterStandard) => {
+                const parameterStandardModel = new ParameterStandardModel();
+                parameterStandardModel.name = parameterStandard.name;
+                parameterStandardModel.unit = parameterStandard.unit;
+                parameterStandardModel.weight = parameterStandard.weight;
+                parameterStandardModel.thresholds =
+                  parameterStandard.thresholds;
+                return parameterStandardModel;
+              },
+            );
+          } else {
+            // parameter standard default value
+            const deviceDefaultModel =
+              await this.deviceModelService.getDeviceModel(device.model);
+            deviceModel.parameterStandards =
+              deviceDefaultModel.parameterStandards as ParameterStandardModel[];
+          }
+
+          return deviceModel;
+        }),
+      );
 
       // II.2 Assign managers
       thingModel.managers = managers.map((manager) => {
@@ -183,6 +198,7 @@ export class ThingService {
     }
   }
 
+  // TODO: Test
   public async update(
     thingId: ObjectId,
     { name, information, location, managers, devices }: SaveThingDto,
@@ -204,25 +220,37 @@ export class ThingService {
       }
 
       // II. Update devices
-      const associatedDevices = devices.map((device) => {
-        const deviceModel = new Device();
-        deviceModel.name = device.name;
-        deviceModel.information = device.information;
-        deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
-        deviceModel.type = device?.type;
-        deviceModel.model = device.model;
-        deviceModel.parameterStandards = device.parameterStandards.map(
-          (parameterStandard) => {
-            const parameterStandardModel = new ParameterStandard();
-            parameterStandardModel.name = parameterStandard.name;
-            parameterStandardModel.unit = parameterStandard.unit;
-            parameterStandardModel.min = parameterStandard?.min;
-            parameterStandardModel.max = parameterStandard?.max;
-            return parameterStandardModel;
-          },
-        );
-        return deviceModel;
-      });
+      const associatedDevices = await Promise.all(
+        devices.map(async (device) => {
+          const deviceModel = new Device();
+          deviceModel.name = device.name;
+          deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
+          deviceModel.model = device.model;
+          deviceModel.parameterStandardDefault =
+            device.parameterStandardDefault;
+          // parameter standard custom
+          if (deviceModel.parameterStandardDefault === false) {
+            deviceModel.parameterStandards = device.parameterStandards.map(
+              (parameterStandard) => {
+                const parameterStandardModel = new ParameterStandardModel();
+                parameterStandardModel.name = parameterStandard.name;
+                parameterStandardModel.unit = parameterStandard.unit;
+                parameterStandardModel.weight = parameterStandard.weight;
+                parameterStandardModel.thresholds =
+                  parameterStandard.thresholds;
+                return parameterStandardModel;
+              },
+            );
+          } else {
+            // parameter standard default value
+            const deviceDefaultModel =
+              await this.deviceModelService.getDeviceModel(device.model);
+            deviceModel.parameterStandards =
+              deviceDefaultModel.parameterStandards as ParameterStandardModel[];
+          }
+          return deviceModel;
+        }),
+      );
 
       // III. Update managers
       const thingManagers = managers.map((manager) => {
@@ -345,6 +373,7 @@ export class ThingService {
     }
   }
 
+  // TODO: Test
   public async detail(thingId: ObjectId, user: UserModel) {
     try {
       const match = { $and: [] };
@@ -372,6 +401,21 @@ export class ThingService {
             },
           },
           {
+            $lookup: {
+              from: NormalCollection.DEVICE_MODEL,
+              localField: 'devices.model',
+              foreignField: '_id',
+              pipeline: [
+                {
+                  $project: {
+                    ...EXCULDE_BASE_MODEL,
+                  },
+                },
+              ],
+              as: 'devices.model',
+            },
+          },
+          {
             $project: {
               createdBy: 0,
               updatedBy: 0,
@@ -391,6 +435,7 @@ export class ThingService {
     }
   }
 
+  // TODO: Test
   public async list(
     { skip, page, limit, q, sortBy, sortOrder, status }: ListThingDto,
     user: UserModel,
@@ -436,6 +481,21 @@ export class ThingService {
               as: 'managers.user',
             },
           },
+          {
+            $lookup: {
+              from: NormalCollection.DEVICE_MODEL,
+              localField: 'devices.model',
+              foreignField: '_id',
+              pipeline: [
+                {
+                  $project: {
+                    ...EXCULDE_BASE_MODEL,
+                  },
+                },
+              ],
+              as: 'devices.model',
+            },
+          },
           { $match: match },
           { $sort: { [`${sortBy}`]: sortOrder } },
           {
@@ -463,10 +523,11 @@ export class ThingService {
     }
   }
 
+  // TODO: Test
   public async updateAssociatedDevice(
     thingId: ObjectId,
     deviceName: string,
-    { name, information, model, type, parameterStandards }: DeviceDto,
+    { name, model, parameterStandards, parameterStandardDefault }: DeviceDto,
     user: UserModel,
   ): Promise<SaveThingResponse> {
     const session = this.client.startSession();
@@ -495,10 +556,20 @@ export class ThingService {
       // II. Update new device
       const updatedDevice = new Device();
       updatedDevice.name = name;
-      updatedDevice.information = information;
       updatedDevice.model = model;
-      updatedDevice.type = type;
-      updatedDevice.parameterStandards = parameterStandards;
+
+      if (parameterStandardDefault === false) {
+        updatedDevice.parameterStandards =
+          parameterStandards as ParameterStandardModel[];
+      } else {
+        // parameter standard default value
+        const deviceDefaultModel = await this.deviceModelService.getDeviceModel(
+          model,
+        );
+        updatedDevice.parameterStandards =
+          deviceDefaultModel.parameterStandards as ParameterStandardModel[];
+      }
+
       devices[toBeUpdateDeviceIndex] = updatedDevice;
 
       await this.thingCollection.updateOne(

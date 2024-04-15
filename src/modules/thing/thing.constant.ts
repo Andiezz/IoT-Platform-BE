@@ -25,7 +25,7 @@ export const PARAMETER_WEIGHT = {
   tvoc: 1,
 };
 
-export const PARAMETER_MESSAGE = {
+export const PARAMETER_THRESHOLD = {
   ABOVE_STANDARD: 'above-standard',
   BELOW_STANDARD: 'below-standard',
   STANDARD: 'standard',
