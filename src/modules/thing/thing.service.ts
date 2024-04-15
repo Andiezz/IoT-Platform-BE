@@ -22,6 +22,7 @@ import {
   Certificate,
   DEVICE_STATUS,
   Device,
+  DeviceWithEvaluatedParameters,
   Location,
   Manager,
   ThingModel,
@@ -34,10 +35,11 @@ import {
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { findRelative } from 'src/shared/utils/find-relative.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import { PARAMETER_MESSAGE } from './thing.constant';
+import { PARAMETER_MESSAGE, PARAMETER_THRESHOLD } from './thing.constant';
 import { TYPE } from '../notification/template-notification';
 import { ParameterStandardModel } from 'src/shared/models/parameter-standard.model';
 import { DeviceModelService } from '../device-model/device-model.service';
+import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
 
 @Injectable()
 export class ThingService {
@@ -719,39 +721,6 @@ export class ThingService {
     }
   }
 
-  public validateThingData(data: ThingData, devices: Device[]) {
-    if (devices.length === 0) {
-      return;
-    }
-
-    devices.forEach((device) => {
-      device.parameterStandards.forEach((parameter, j) => {
-        const value = data[`${parameter.name.toLowerCase()}`];
-        if (!value) {
-          return;
-        }
-
-        let message: string;
-        let type: string;
-        if (parameter?.max && value > parameter.max) {
-          message = PARAMETER_MESSAGE.ABOVE_STANDARD;
-          type = TYPE.WARNING;
-        } else if (parameter?.min && value < parameter.min) {
-          message = PARAMETER_MESSAGE.BELOW_STANDARD;
-          type = TYPE.WARNING;
-        } else {
-          message = PARAMETER_MESSAGE.STANDARD;
-        }
-
-        device.parameterStandards[j]['message'] = message;
-        device.parameterStandards[j]['value'] = value;
-        type && (device.parameterStandards[j]['type'] = type);
-      });
-    });
-
-    return devices;
-  }
-
   public async isNameExist(
     name: string,
     filter?: object,
@@ -782,5 +751,55 @@ export class ThingService {
     if (!nameIsExist) throw new NotFoundException('thing-not-existed');
 
     return nameIsExist;
+  }
+
+  public validateThingData(data: ThingData, devices: Device[]) {
+    if (devices.length === 0) {
+      return;
+    }
+
+    const evaluatedDeviceData = devices.map((device) => {
+      const evaluatedDevice = new DeviceWithEvaluatedParameters();
+      evaluatedDevice.name = device.name;
+      evaluatedDevice.model = device.model;
+      evaluatedDevice.status = device.status;
+      evaluatedDevice.parameterStandards = device.parameterStandards;
+      evaluatedDevice.parameterStandardDefault =
+        device.parameterStandardDefault;
+      device.parameterStandards.forEach((parameter, j) => {
+        const value = data[`${parameter.name.toLowerCase()}`];
+        if (!value) {
+          return;
+        }
+
+        const threshold = this.getThingValueThreshold(value, parameter);
+        if (
+          [
+            PARAMETER_THRESHOLD.GOOD.name,
+            PARAMETER_THRESHOLD.MODERATE.name,
+            PARAMETER_THRESHOLD.SENSITIVE_UNHEALTHY.name,
+          ].includes(threshold.name)
+        ) {
+          return;
+        }
+
+        const evaluatedParameter = new EvaluatedParameter();
+        evaluatedParameter.name = parameter.name;
+        evaluatedParameter.unit = parameter.unit;
+        evaluatedParameter.value = value;
+        evaluatedParameter.threshold = threshold;
+        evaluatedParameter.type = TYPE.WARNING;
+
+        evaluatedDevice.evaluatedParameterStandards.push(evaluatedParameter);
+      });
+      return evaluatedDevice;
+    });
+
+    return evaluatedDeviceData;
+  }
+
+  // get the threshold the value is in
+  getThingValueThreshold(value: number, parameter: ParameterStandardModel) {
+    
   }
 }

@@ -29,6 +29,7 @@ export class NotificationService {
     private readonly socketGateway: SocketGateway,
   ) {}
 
+  // TODO: change
   async createExceedThresholdNotification(
     thingId: ObjectId,
     dtos: CreateExceedThresholdNotificationDto[],
@@ -283,8 +284,7 @@ export class NotificationService {
     const createNotificationDtos = validateParameterDevices.map((device) => {
       const createNotificationDto = new CreateExceedThresholdNotificationDto();
       createNotificationDto.deviceName = device.name;
-      createNotificationDto.parameters =
-        device.parameterStandards as Parameter[];
+      createNotificationDto.parameters = device.evaluatedParameterStandards;
       return createNotificationDto;
     });
 

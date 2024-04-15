@@ -17,7 +17,7 @@ export const PARAMETER_WEIGHT = {
   co: 3,
   ch4: 0,
   'pm2.5': 2,
-  'pm10': 0,
+  pm10: 0,
   co2: 2,
   humidity: 1,
   temperature: 1,
@@ -26,7 +26,43 @@ export const PARAMETER_WEIGHT = {
 };
 
 export const PARAMETER_THRESHOLD = {
-  ABOVE_STANDARD: 'above-standard',
-  BELOW_STANDARD: 'below-standard',
-  STANDARD: 'standard',
+  GOOD: {
+    name: 'good',
+    min: 0,
+    max: 50,
+  },
+  MODERATE: {
+    name: 'moderate',
+    min: 50,
+    max: 100,
+  },
+  SENSITIVE_UNHEALTHY: {
+    name: 'sensitive-unhealthy',
+    min: 100,
+    max: 150,
+  },
+  UNHEALTHY: {
+    name: 'unhealthy',
+    min: 150,
+    max: 200,
+  },
+  VERT_UNHEALTHY: {
+    name: 'very-unhealthy',
+    min: 200,
+    max: 300,
+  },
+  HARZARDOUS: {
+    name: 'harzardous',
+    min: 300,
+    max: 500,
+  },
 };
+
+export enum PARAMETER_THRESHOLD_NAME {
+  GOOD = 'good',
+  MODERATE = 'moderate',
+  SENSITIVE_UNHEALTHY = 'sensitive-unhealthy',
+  UNHEALTHY = 'unhealthy',
+  VERT_UNHEALTHY = 'very-unhealthy',
+  HARZARDOUS = 'harzardous',
+}

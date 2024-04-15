@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { BaseModel } from './base.model';
 import { ParameterStandardModel } from './parameter-standard.model';
+import { EvaluatedParameter } from '../dto/request/notification/create.request';
 
 export enum DEVICE_STATUS {
   ACTIVE = 'active',
@@ -14,6 +15,10 @@ export class Device {
   public model: ObjectId;
   public parameterStandards: ParameterStandardModel[];
   public parameterStandardDefault: boolean;
+}
+
+export class DeviceWithEvaluatedParameters extends Device {
+  public evaluatedParameterStandards: EvaluatedParameter[];
 }
 
 export class Location {

@@ -262,35 +262,6 @@ export class SystemManagementService {
       const data = await this.userCollection
         .aggregate([
           {
-            $lookup: {
-              from: NormalCollection.USER_MANAGE,
-              localField: '_id',
-              foreignField: 'userId',
-              pipeline: [
-                {
-                  $lookup: {
-                    from: NormalCollection.THING,
-                    localField: 'thingId',
-                    foreignField: '_id',
-                    pipeline: [
-                      {
-                        $project: {
-                          name: 1,
-                          status: 1,
-                        },
-                      },
-                    ],
-                    as: 'thing',
-                  },
-                },
-                {
-                  $unwind: '$thing',
-                },
-              ],
-              as: 'owners',
-            },
-          },
-          {
             $project: { hash: 0, salt: 0 },
           },
           {

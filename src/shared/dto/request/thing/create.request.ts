@@ -6,7 +6,6 @@ import {
   IsNotEmptyObject,
   IsNumber,
   IsObject,
-  IsOptional,
 } from 'class-validator';
 import { ObjectId } from 'mongodb';
 import { DEVICE_STATUS } from 'src/shared/models/thing.model';
