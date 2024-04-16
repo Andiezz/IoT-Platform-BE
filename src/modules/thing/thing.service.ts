@@ -57,7 +57,6 @@ export class ThingService {
     private readonly deviceModelService: DeviceModelService,
   ) {}
 
-  // TODO: Test
   public async create(
     { name, information, location, managers, devices }: SaveThingDto,
     user: UserModel,
@@ -203,7 +202,6 @@ export class ThingService {
     }
   }
 
-  // TODO: Test
   public async update(
     thingId: ObjectId,
     { name, information, location, managers, devices }: SaveThingDto,
@@ -378,7 +376,6 @@ export class ThingService {
     }
   }
 
-  // TODO: Test
   public async detail(thingId: ObjectId, user: UserModel) {
     try {
       const match = { $and: [] };
@@ -406,18 +403,52 @@ export class ThingService {
             },
           },
           {
+            $unwind: {
+              path: '$devices',
+            },
+          },
+          {
             $lookup: {
               from: NormalCollection.DEVICE_MODEL,
               localField: 'devices.model',
               foreignField: '_id',
+              let: {
+                dName: '$devices.name',
+                dStatus: '$devices.status',
+                dParameterStandardDefault: '$devices.parameterStandardDefault',
+                dParameterStandards: '$devices.parameterStandards',
+              },
               pipeline: [
                 {
                   $project: {
                     ...EXCULDE_BASE_MODEL,
+                    _id: 0,
+                  },
+                },
+                {
+                  $project: {
+                    name: '$$dName',
+                    status: '$$dStatus',
+                    model: '$$ROOT',
+                    parameterStandardDefault: '$$dParameterStandardDefault',
+                    parameterStandards: '$$dParameterStandards',
                   },
                 },
               ],
-              as: 'devices.model',
+              as: 'devices',
+            },
+          },
+          {
+            $unwind: {
+              path: '$devices',
+            },
+          },
+          {
+            $group: {
+              _id: '$_id',
+              devices: {
+                $push: '$devices',
+              },
             },
           },
           {
@@ -440,7 +471,6 @@ export class ThingService {
     }
   }
 
-  // TODO: Test
   public async list(
     { skip, page, limit, q, sortBy, sortOrder, status }: ListThingDto,
     user: UserModel,
@@ -487,18 +517,52 @@ export class ThingService {
             },
           },
           {
+            $unwind: {
+              path: '$devices',
+            },
+          },
+          {
             $lookup: {
               from: NormalCollection.DEVICE_MODEL,
               localField: 'devices.model',
               foreignField: '_id',
+              let: {
+                dName: '$devices.name',
+                dStatus: '$devices.status',
+                dParameterStandardDefault: '$devices.parameterStandardDefault',
+                dParameterStandards: '$devices.parameterStandards',
+              },
               pipeline: [
                 {
                   $project: {
                     ...EXCULDE_BASE_MODEL,
+                    _id: 0,
+                  },
+                },
+                {
+                  $project: {
+                    name: '$$dName',
+                    status: '$$dStatus',
+                    model: '$$ROOT',
+                    parameterStandardDefault: '$$dParameterStandardDefault',
+                    parameterStandards: '$$dParameterStandards',
                   },
                 },
               ],
-              as: 'devices.model',
+              as: 'devices',
+            },
+          },
+          {
+            $unwind: {
+              path: '$devices',
+            },
+          },
+          {
+            $group: {
+              _id: '$_id',
+              devices: {
+                $push: '$devices',
+              },
             },
           },
           { $match: match },

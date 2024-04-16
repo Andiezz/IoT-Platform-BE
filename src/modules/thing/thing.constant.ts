@@ -18,7 +18,7 @@ export const PARAMETER_WEIGHT = {
   co: 3,
   ch4: 0,
   'pm2.5': 2,
-  pm10: 0,
+  pm10: 2,
   co2: 2,
   humidity: 1,
   temperature: 1,

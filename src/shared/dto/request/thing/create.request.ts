@@ -25,11 +25,10 @@ export class DeviceDto {
   @Transform(({ value }: { value: string }) => new ObjectId(value))
   public model: ObjectId;
 
-  @ApiProperty({ type: [CreateParameterStandardDto] })
+  @ApiPropertyOptional({ type: [CreateParameterStandardDto] })
   public parameterStandards?: CreateParameterStandardDto[];
 
-  @ApiProperty()
-  @IsNotEmpty()
+  @ApiPropertyOptional()
   parameterStandardDefault: boolean = true;
 }
 

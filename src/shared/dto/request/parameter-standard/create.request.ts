@@ -38,7 +38,7 @@ export class CreateParameterStandardDto {
   @IsNotEmpty()
   public weight: number;
 
-  @ApiProperty({ type: ThresholdDto })
+  @ApiProperty({ type: [ThresholdDto] })
   @IsNotEmpty()
   public thresholds: Threshold[];
 }

@@ -208,7 +208,10 @@ export class ParameterStandardService {
       { session },
     )) as ParameterStandardModel;
 
-    if (parameterStandard && parameterStandard._id !== parameterStandardId) {
+    if (
+      parameterStandard &&
+      parameterStandard._id.toString() !== parameterStandardId.toString()
+    ) {
       return true;
     }
     return false;

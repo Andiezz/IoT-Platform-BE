@@ -89,7 +89,7 @@ export class DeviceModelService {
         session,
       );
       if (nameIsExist) {
-        throw new BadRequestException('parameter-name-exist');
+        throw new BadRequestException('device-model-name-exist');
       }
       const parameterStandardExist = await this.parameterStandardCollection
         .find({
@@ -281,7 +281,10 @@ export class DeviceModelService {
       { session },
     )) as DeviceModel;
 
-    if (deviceModel && deviceModel._id !== deviceModelId) {
+    if (
+      deviceModel &&
+      deviceModel._id.toString() !== deviceModelId.toString()
+    ) {
       return true;
     }
     return false;

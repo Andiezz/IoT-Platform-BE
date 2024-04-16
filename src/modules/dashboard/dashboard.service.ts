@@ -41,6 +41,7 @@ export class DashboardService {
     private readonly notificationService: NotificationService,
   ) {}
 
+  // TODO: Test
   public async getDashboard(
     thingId: ObjectId,
     getDashboardDto: GetDashboardDto,
