@@ -15,8 +15,14 @@ import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 import { NotificationService } from '../notification/notification.service';
 import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
 import { ThingModel } from 'src/shared/models/thing.model';
-import { PARAMETER_NAME, PARAMETER_WEIGHT } from '../thing/thing.constant';
+import {
+  PARAMETER_NAME,
+  PARAMETER_THRESHOLD_NAME,
+  PARAMETER_WEIGHT,
+} from '../thing/thing.constant';
 import { checkValueExistInObjectArray } from 'src/shared/utils/array.utils';
+import { ThingData } from '../iot-consumer/iot-consumer.interface';
+import { convertParameterValueToIAQI } from '../parameter-standard/parameter-standard.constants';
 
 @Injectable()
 export class DashboardService {
@@ -71,6 +77,7 @@ export class DashboardService {
         getThingWarningPromise,
       ]);
 
+      // II.4 Get thing quality report
       const qualityReport = await this.getQualityReport(
         thingId,
         getDashboardDto,
@@ -247,7 +254,7 @@ export class DashboardService {
 
   public async getThingWarning(thingId: ObjectId) {
     try {
-      const warnings = this.notificationService.getThingWarnings(thingId);
+      const warnings = await this.notificationService.getThingWarnings(thingId);
       return warnings;
     } catch (error) {
       this.logger.error(error);
@@ -265,56 +272,68 @@ export class DashboardService {
     }
   }
 
-  public calculateReport(timeseriesData: TimeseriesData, thing: ThingModel) {
-    // get parameter standard
-    const parameterStandards = thing.devices
-      .map((device) => {
-        return device.parameterStandards.map((parameter) => {
-          return parameter;
-        });
-      })
-      .flat(1);
+  // TODO: - Calculate general iaqi - TVOC evaluation
+  public async calculateReport(
+    timeseriesData: TimeseriesData,
+    thing: ThingModel,
+  ) {
+    const thingData: ThingData = {
+      ...timeseriesData,
+      thingId: thing._id.toString(),
+    };
+    const evaluatedParameters =
+      await this.notificationService.classifyTypeAndTitle(thing._id, thingData);
 
     // evaluate quality
-    let qualityResult = 0;
     let tVOC = 0;
     const acceptableSubstances = [];
     const unAcceptableSubstances = [];
     const tVOCSubstances = [];
-    parameterStandards.forEach((parameterStandard, i) => {
-      const { name, min, max } = parameterStandard;
-      if ((min !== 0 && !min) || !max) {
-        return;
-      }
-      const timeseriesFieldName = name.toLowerCase().replace(' ', '');
-      const value = timeseriesData[`${timeseriesFieldName}`];
+    evaluatedParameters.forEach((evaluatedParameter, i) => {
+      const { name, value, threshold } = evaluatedParameter;
+      const iaqiValue = convertParameterValueToIAQI(evaluatedParameter);
 
       // evaluate tVOC
       if (
         [
-          PARAMETER_NAME.Aceton,
-          PARAMETER_NAME.Alcohol,
-          PARAMETER_NAME.LPG,
-          PARAMETER_NAME.Toluen,
+          PARAMETER_NAME.Aceton.toString(),
+          PARAMETER_NAME.Alcohol.toString(),
+          PARAMETER_NAME.LPG.toString(),
+          PARAMETER_NAME.Toluen.toString(),
         ].includes(name)
       ) {
-        tVOCSubstances.push(parameterStandard);
+        tVOCSubstances.push(evaluatedParameter);
         tVOC += value;
         return;
       }
 
-      if (value < min || value > max) {
-        qualityResult += PARAMETER_WEIGHT[`${timeseriesFieldName}`];
-        unAcceptableSubstances.push(parameterStandard);
+      if (
+        [
+          PARAMETER_THRESHOLD_NAME.UNHEALTHY.toString(),
+          PARAMETER_THRESHOLD_NAME.VERT_UNHEALTHY.toString(),
+          PARAMETER_THRESHOLD_NAME.HARZARDOUS.toString(),
+        ].includes(threshold.name)
+      ) {
+        unAcceptableSubstances.push({ evaluatedParameter, iaqiValue });
+        return;
+      } else if (
+        [
+          PARAMETER_THRESHOLD_NAME.GOOD.toString(),
+          PARAMETER_THRESHOLD_NAME.MODERATE.toString(),
+          PARAMETER_THRESHOLD_NAME.SENSITIVE_UNHEALTHY.toString(),
+        ].includes(threshold.name)
+      ) {
+        acceptableSubstances.push({ evaluatedParameter, iaqiValue });
         return;
       }
 
-      if (i === parameterStandards.length - 1 && tVOC > PARAMETER_WEIGHT.tvoc) {
-        qualityResult += PARAMETER_WEIGHT.tvoc;
+      if (i === evaluatedParameters.length - 1) {
+        tVOC
         unAcceptableSubstances.push(...tVOCSubstances);
       }
-      acceptableSubstances.push(parameterStandard);
     });
+
+    // TODO: calculate general iaqi
 
     return {
       qualityResult,

@@ -1,16 +1,16 @@
-export const PARAMETER_NAME = {
-  PM25: 'PM2.5',
-  PM10: 'PM10',
-  CO2: 'CO2',
-  Temp: 'Temperature',
-  Humi: 'Humidity',
-  LPG: 'LPG',
-  CH4: 'CH4',
-  CO: 'CO',
-  Alcohol: 'Alcohol',
-  Toluen: 'Toluen',
-  NH4: 'NH4',
-  Aceton: 'Aceton',
+export enum PARAMETER_NAME {
+  PM25 = 'PM2.5',
+  PM10 = 'PM10',
+  CO2 = 'CO2',
+  Temp = 'Temperature',
+  Humi = 'Humidity',
+  LPG = 'LPG',
+  CH4 = 'CH4',
+  CO = 'CO',
+  Alcohol = 'Alcohol',
+  Toluen = 'Toluen',
+  NH4 = 'NH4',
+  Aceton = 'Aceton',
 };
 
 export const PARAMETER_WEIGHT = {

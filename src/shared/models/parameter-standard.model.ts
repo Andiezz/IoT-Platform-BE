@@ -1,4 +1,4 @@
-import { PARAMETER_THRESHOLD_NAME } from 'src/modules/thing/thing.constant';
+import { PARAMETER_NAME, PARAMETER_THRESHOLD_NAME } from 'src/modules/thing/thing.constant';
 import { BaseModel } from './base.model';
 
 export class Threshold {

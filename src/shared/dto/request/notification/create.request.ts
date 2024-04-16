@@ -1,19 +1,12 @@
-import { TYPE } from 'src/modules/notification/template-notification';
-
 export class EvaluatedParameter {
   name: string;
-  value: string;
+  value: number;
   unit: string;
   threshold: {
     name: string;
-    min: string;
-    max: string;
+    color: string;
+    min: number;
+    max: number;
   };
   type?: string;
-}
-
-export class CreateExceedThresholdNotificationDto {
-  deviceName: string;
-  type: string = TYPE.WARNING;
-  parameters: EvaluatedParameter[];
 }

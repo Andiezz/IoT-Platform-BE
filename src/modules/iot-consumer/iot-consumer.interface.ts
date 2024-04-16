@@ -20,7 +20,7 @@ export interface DeviceStatusMessage {
 
 export interface ThingData {
   thingId: string;
-  timestamp: string;
+  timestamp?: string;
   'pm2.5': number;
   pm10: number;
   temperature: number;

@@ -35,9 +35,12 @@ import {
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { findRelative } from 'src/shared/utils/find-relative.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import { PARAMETER_MESSAGE, PARAMETER_THRESHOLD } from './thing.constant';
+import { PARAMETER_NAME, PARAMETER_THRESHOLD } from './thing.constant';
 import { TYPE } from '../notification/template-notification';
-import { ParameterStandardModel } from 'src/shared/models/parameter-standard.model';
+import {
+  ParameterStandardModel,
+  Threshold,
+} from 'src/shared/models/parameter-standard.model';
 import { DeviceModelService } from '../device-model/device-model.service';
 import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
 
@@ -766,10 +769,23 @@ export class ThingService {
       evaluatedDevice.parameterStandards = device.parameterStandards;
       evaluatedDevice.parameterStandardDefault =
         device.parameterStandardDefault;
-      device.parameterStandards.forEach((parameter, j) => {
+
+      let tVOC = 0;
+      device.parameterStandards.forEach((parameter, j, arr) => {
         const value = data[`${parameter.name.toLowerCase()}`];
         if (!value) {
           return;
+        }
+
+        if (
+          [
+            PARAMETER_NAME.Aceton.toString(),
+            PARAMETER_NAME.Alcohol.toString(),
+            PARAMETER_NAME.LPG.toString(),
+            PARAMETER_NAME.Toluen.toString(),
+          ].includes(parameter.name)
+        ) {
+          tVOC += value;
         }
 
         const threshold = this.getThingValueThreshold(value, parameter);
@@ -800,6 +816,12 @@ export class ThingService {
 
   // get the threshold the value is in
   getThingValueThreshold(value: number, parameter: ParameterStandardModel) {
-    
+    let evaluatedValueThreshold: Threshold = undefined;
+    parameter.thresholds.forEach((threshold) => {
+      if (value >= threshold.min && value < threshold.max) {
+        evaluatedValueThreshold = threshold;
+      }
+    });
+    return evaluatedValueThreshold;
   }
 }
