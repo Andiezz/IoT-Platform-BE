@@ -20,3 +20,23 @@ export const convertParameterValueToIAQI = (parameter: EvaluatedParameter) => {
   const iaqi = a + valueInRange1;
   return iaqi;
 }
+
+/*
+  Calculation:
+    s = Sum of all IAQI mutiplied by its weight
+    w = Sum of all weights
+    overallIAQI = s / w
+*/
+export const calculateOverallIndoorAirQualityIndex = (parameters: EvaluatedParameter[]) => {
+  let s = 0;
+  let w = 0;
+  parameters.forEach(parameter => {
+    const { iaqiValue, weight } = parameter;
+    if (iaqiValue && weight) {
+      s += iaqiValue * weight;
+      w += weight;
+    }
+  })
+  const overallIAQI = s / w;
+  return overallIAQI;
+}

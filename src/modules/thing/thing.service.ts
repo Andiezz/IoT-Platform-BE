@@ -761,6 +761,8 @@ export class ThingService {
       return;
     }
 
+    let tVOC = 0;
+    let tVOCParameter: ParameterStandardModel;
     const evaluatedDeviceData = devices.map((device) => {
       const evaluatedDevice = new DeviceWithEvaluatedParameters();
       evaluatedDevice.name = device.name;
@@ -770,13 +772,16 @@ export class ThingService {
       evaluatedDevice.parameterStandardDefault =
         device.parameterStandardDefault;
 
-      let tVOC = 0;
-      device.parameterStandards.forEach((parameter, j, arr) => {
+      device.parameterStandards.forEach((parameter) => {
         const value = data[`${parameter.name.toLowerCase()}`];
         if (!value) {
           return;
         }
+        if (parameter.name === PARAMETER_NAME.TVOC) {
+          tVOCParameter = parameter;
+        }
 
+        // tvoc accumulation for evaluate tvoc result
         if (
           [
             PARAMETER_NAME.Aceton.toString(),
@@ -788,6 +793,7 @@ export class ThingService {
           tVOC += value;
         }
 
+        // skip if value is fine
         const threshold = this.getThingValueThreshold(value, parameter);
         if (
           [
@@ -796,12 +802,23 @@ export class ThingService {
             PARAMETER_THRESHOLD.SENSITIVE_UNHEALTHY.name,
           ].includes(threshold.name)
         ) {
+          const evaluatedParameter = new EvaluatedParameter();
+          evaluatedParameter.name = parameter.name;
+          evaluatedParameter.unit = parameter.unit;
+          evaluatedParameter.weight = parameter.weight;
+          evaluatedParameter.value = value;
+          evaluatedParameter.threshold = threshold;
+          evaluatedParameter.type = TYPE.NORMAL;
+
+          evaluatedDevice.evaluatedParameterStandards.push(evaluatedParameter);
           return;
         }
 
+        // create parameter with the evaluated result
         const evaluatedParameter = new EvaluatedParameter();
         evaluatedParameter.name = parameter.name;
         evaluatedParameter.unit = parameter.unit;
+        evaluatedParameter.weight = parameter.weight;
         evaluatedParameter.value = value;
         evaluatedParameter.threshold = threshold;
         evaluatedParameter.type = TYPE.WARNING;
@@ -810,6 +827,27 @@ export class ThingService {
       });
       return evaluatedDevice;
     });
+
+    // evaluate tVOC parameter
+    const threshold = this.getThingValueThreshold(tVOC, tVOCParameter);
+    const evaluatedParameter = new EvaluatedParameter();
+    if (
+      [
+        PARAMETER_THRESHOLD.GOOD.name,
+        PARAMETER_THRESHOLD.MODERATE.name,
+        PARAMETER_THRESHOLD.SENSITIVE_UNHEALTHY.name,
+      ].includes(threshold.name)
+    ) {
+      evaluatedParameter.type = TYPE.NORMAL;
+    } else {
+      evaluatedParameter.type = TYPE.WARNING;
+    }
+    evaluatedParameter.name = tVOCParameter.name;
+    evaluatedParameter.unit = tVOCParameter.unit;
+    evaluatedParameter.weight = tVOCParameter.weight;
+    evaluatedParameter.value = tVOC;
+    evaluatedParameter.threshold = threshold;
+    evaluatedDeviceData[0].evaluatedParameterStandards.push(evaluatedParameter);
 
     return evaluatedDeviceData;
   }

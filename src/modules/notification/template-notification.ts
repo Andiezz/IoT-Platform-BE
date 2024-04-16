@@ -14,6 +14,7 @@ export const CONTENT = {
 
 export const TYPE = {
   WARNING: 'Warning',
+  NORMAL: 'Normal',
 };
 
 export const formatTemplateContentArgument = (

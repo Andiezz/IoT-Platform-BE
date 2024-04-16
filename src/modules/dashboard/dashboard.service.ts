@@ -2,9 +2,8 @@ import {
   Injectable,
   Logger,
   BadRequestException,
-  NotFoundException,
 } from '@nestjs/common';
-import { Collection, Document, MongoClient, ObjectId } from 'mongodb';
+import { Collection, MongoClient, ObjectId } from 'mongodb';
 import { InjectClient, InjectCollection } from 'src/modules/mongodb';
 import { NormalCollection } from 'src/shared/constants/mongo.collection';
 import { ConfigService } from '@nestjs/config';
@@ -16,13 +15,16 @@ import { NotificationService } from '../notification/notification.service';
 import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
 import { ThingModel } from 'src/shared/models/thing.model';
 import {
-  PARAMETER_NAME,
-  PARAMETER_THRESHOLD_NAME,
-  PARAMETER_WEIGHT,
+  getParameterThreshold,
 } from '../thing/thing.constant';
 import { checkValueExistInObjectArray } from 'src/shared/utils/array.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import { convertParameterValueToIAQI } from '../parameter-standard/parameter-standard.constants';
+import {
+  calculateOverallIndoorAirQualityIndex,
+  convertParameterValueToIAQI,
+} from '../parameter-standard/parameter-standard.constants';
+import { TYPE } from '../notification/template-notification';
+import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
 
 @Injectable()
 export class DashboardService {
@@ -152,6 +154,7 @@ export class DashboardService {
             lpg: { $avg: '$lpg' },
             temperature: { $avg: '$temperature' },
             nh4: { $avg: '$nh4' },
+            tvoc: { $avg: '$tvoc' },
             count: { $sum: 1 },
           },
         },
@@ -225,6 +228,7 @@ export class DashboardService {
             lpg: { $avg: '$lpg' },
             temperature: { $avg: '$temperature' },
             nh4: { $avg: '$nh4' },
+            tvoc: { $avg: '$tvoc' },
             count: { $sum: 1 },
           },
         },
@@ -272,71 +276,48 @@ export class DashboardService {
     }
   }
 
-  // TODO: - Calculate general iaqi - TVOC evaluation
   public async calculateReport(
     timeseriesData: TimeseriesData,
     thing: ThingModel,
   ) {
     const thingData: ThingData = {
       ...timeseriesData,
-      thingId: thing._id.toString(),
+      metadata: {
+        thingId: thing._id.toString(),
+      },
     };
     const evaluatedParameters =
       await this.notificationService.classifyTypeAndTitle(thing._id, thingData);
 
     // evaluate quality
-    let tVOC = 0;
-    const acceptableSubstances = [];
-    const unAcceptableSubstances = [];
-    const tVOCSubstances = [];
-    evaluatedParameters.forEach((evaluatedParameter, i) => {
-      const { name, value, threshold } = evaluatedParameter;
+    const acceptableSubstances: EvaluatedParameter[] = [];
+    const unAcceptableSubstances: EvaluatedParameter[] = [];
+    evaluatedParameters.forEach((evaluatedParameter) => {
+      const { type } = evaluatedParameter;
       const iaqiValue = convertParameterValueToIAQI(evaluatedParameter);
 
-      // evaluate tVOC
-      if (
-        [
-          PARAMETER_NAME.Aceton.toString(),
-          PARAMETER_NAME.Alcohol.toString(),
-          PARAMETER_NAME.LPG.toString(),
-          PARAMETER_NAME.Toluen.toString(),
-        ].includes(name)
-      ) {
-        tVOCSubstances.push(evaluatedParameter);
-        tVOC += value;
-        return;
-      }
-
-      if (
-        [
-          PARAMETER_THRESHOLD_NAME.UNHEALTHY.toString(),
-          PARAMETER_THRESHOLD_NAME.VERT_UNHEALTHY.toString(),
-          PARAMETER_THRESHOLD_NAME.HARZARDOUS.toString(),
-        ].includes(threshold.name)
-      ) {
-        unAcceptableSubstances.push({ evaluatedParameter, iaqiValue });
-        return;
-      } else if (
-        [
-          PARAMETER_THRESHOLD_NAME.GOOD.toString(),
-          PARAMETER_THRESHOLD_NAME.MODERATE.toString(),
-          PARAMETER_THRESHOLD_NAME.SENSITIVE_UNHEALTHY.toString(),
-        ].includes(threshold.name)
-      ) {
-        acceptableSubstances.push({ evaluatedParameter, iaqiValue });
-        return;
-      }
-
-      if (i === evaluatedParameters.length - 1) {
-        tVOC
-        unAcceptableSubstances.push(...tVOCSubstances);
+      if (type === TYPE.WARNING) {
+        unAcceptableSubstances.push({
+          ...evaluatedParameter,
+          iaqiValue,
+        } as EvaluatedParameter);
+      } else if (type === TYPE.NORMAL) {
+        acceptableSubstances.push({
+          ...evaluatedParameter,
+          iaqiValue,
+        } as EvaluatedParameter);
       }
     });
 
-    // TODO: calculate general iaqi
+    // calculate general iaqi
+    const generalIaqi = calculateOverallIndoorAirQualityIndex([
+      ...acceptableSubstances,
+      ...unAcceptableSubstances,
+    ]);
+    const generalIaqiReport = getParameterThreshold(generalIaqi);
 
     return {
-      qualityResult,
+      generalIaqiReport,
       acceptableSubstances,
       unAcceptableSubstances,
     };

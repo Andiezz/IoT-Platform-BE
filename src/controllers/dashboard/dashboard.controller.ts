@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DashboardService } from 'src/modules/dashboard/dashboard.service';
 import { User } from 'src/decorators/user.decorator';
@@ -7,7 +7,6 @@ import { UserModel } from 'src/shared/models/user.model';
 import { ApiOkResponseBase } from 'src/shared/utils/swagger.utils';
 import { GetDashboardDto } from 'src/shared/dto/request/dashboard/get-dashboard.request';
 import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
-import { ThingModel } from 'src/shared/models/thing.model';
 
 @ApiTags('dashboard')
 @Controller('dashboard')

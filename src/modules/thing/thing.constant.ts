@@ -11,6 +11,7 @@ export enum PARAMETER_NAME {
   Toluen = 'Toluen',
   NH4 = 'NH4',
   Aceton = 'Aceton',
+  TVOC = 'TVOC'
 };
 
 export const PARAMETER_WEIGHT = {
@@ -24,6 +25,12 @@ export const PARAMETER_WEIGHT = {
   nh4: 0,
   tvoc: 1,
 };
+
+export interface IParameterThreshold {
+  name: string;
+  min: number;
+  max: number;
+}
 
 export const PARAMETER_THRESHOLD = {
   GOOD: {
@@ -65,4 +72,12 @@ export enum PARAMETER_THRESHOLD_NAME {
   UNHEALTHY = 'unhealthy',
   VERT_UNHEALTHY = 'very-unhealthy',
   HARZARDOUS = 'harzardous',
+}
+
+export const getParameterThreshold = (generalIaqi: number) => {
+  for (let threshold in PARAMETER_THRESHOLD) {
+    if (generalIaqi >= PARAMETER_THRESHOLD[threshold].min && generalIaqi <= PARAMETER_THRESHOLD[threshold].max) {
+      return PARAMETER_THRESHOLD[threshold] as IParameterThreshold;
+    }
+  }
 }
