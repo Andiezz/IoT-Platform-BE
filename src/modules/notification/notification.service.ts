@@ -28,7 +28,6 @@ export class NotificationService {
     private readonly socketGateway: SocketGateway,
   ) {}
 
-  // TODO: Test
   async createWarningThresholdNotificationDto(
     thingId: ObjectId,
     evaluatedParameters: EvaluatedParameter[],

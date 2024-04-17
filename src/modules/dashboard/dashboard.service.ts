@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { Collection, MongoClient, ObjectId } from 'mongodb';
 import { InjectClient, InjectCollection } from 'src/modules/mongodb';
 import { NormalCollection } from 'src/shared/constants/mongo.collection';
@@ -14,9 +10,7 @@ import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 import { NotificationService } from '../notification/notification.service';
 import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
 import { ThingModel } from 'src/shared/models/thing.model';
-import {
-  getParameterThreshold,
-} from '../thing/thing.constant';
+import { getParameterThreshold } from '../thing/thing.constant';
 import { checkValueExistInObjectArray } from 'src/shared/utils/array.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
 import {
@@ -41,7 +35,6 @@ export class DashboardService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  // TODO: Test
   public async getDashboard(
     thingId: ObjectId,
     getDashboardDto: GetDashboardDto,
@@ -69,7 +62,12 @@ export class DashboardService {
       );
 
       // II.2 Get thing detail
-      const getThingDetailPromise = this.getThingDetail(thingId, user);
+      const getThingDetailPromise = this.getThingDetail(thingId, user, {
+        createdBy: 0,
+        updatedBy: 0,
+        createdOn: 0,
+        updatedOn: 0,
+      });
 
       // II.3 Get thing warning
       const getThingWarningPromise = this.getThingWarning(thingId);
@@ -245,7 +243,7 @@ export class DashboardService {
         ])
         .toArray()) as TimeseriesData[];
 
-      const iaqResult = this.calculateReport(timeseriesData[0], thing);
+      const iaqResult = await this.calculateReport(timeseriesData[0], thing);
 
       return {
         iaqResult,
@@ -267,9 +265,17 @@ export class DashboardService {
     }
   }
 
-  public async getThingDetail(thingId: ObjectId, user: UserModel) {
+  public async getThingDetail(
+    thingId: ObjectId,
+    user: UserModel,
+    excludeFields: object,
+  ) {
     try {
-      const thing = await this.thingService.detail(thingId, user);
+      const thing = await this.thingService.detail(
+        thingId,
+        user,
+        excludeFields,
+      );
       return thing;
     } catch (error) {
       this.logger.error(error);

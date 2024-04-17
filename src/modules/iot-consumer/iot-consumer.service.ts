@@ -63,7 +63,7 @@ export class IotMessageProcessor
       return;
     }
 
-    this.iotClient.on('connect', () => {
+    this.iotClient.on('connect', async () => {
       this.logger.log('Consumer connected to iot core');
 
       this.iotClient.subscribe('presence/connected/#', (e) => {

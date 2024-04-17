@@ -35,7 +35,11 @@ import {
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { findRelative } from 'src/shared/utils/find-relative.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import { PARAMETER_NAME, PARAMETER_THRESHOLD } from './thing.constant';
+import {
+  PARAMETER_NAME,
+  PARAMETER_THRESHOLD,
+  PARAMETER_THRESHOLD_NAME,
+} from './thing.constant';
 import { TYPE } from '../notification/template-notification';
 import {
   ParameterStandardModel,
@@ -376,7 +380,11 @@ export class ThingService {
     }
   }
 
-  public async detail(thingId: ObjectId, user: UserModel) {
+  public async detail(
+    thingId: ObjectId,
+    user: UserModel,
+    excludeFields: object = {},
+  ) {
     try {
       const match = { $and: [] };
       match['$and'].push({ _id: thingId, isDeleted: false });
@@ -453,11 +461,8 @@ export class ThingService {
           },
           {
             $project: {
-              createdBy: 0,
-              updatedBy: 0,
-              createdOn: 0,
-              updatedOn: 0,
               certificate: 0,
+              ...excludeFields,
             },
           },
         ])
@@ -592,7 +597,6 @@ export class ThingService {
     }
   }
 
-  // TODO: Test
   public async updateAssociatedDevice(
     thingId: ObjectId,
     deviceName: string,
@@ -835,14 +839,15 @@ export class ThingService {
       evaluatedDevice.parameterStandards = device.parameterStandards;
       evaluatedDevice.parameterStandardDefault =
         device.parameterStandardDefault;
+      evaluatedDevice.evaluatedParameterStandards = [];
 
       device.parameterStandards.forEach((parameter) => {
+        if (parameter.name === PARAMETER_NAME.TVOC) {
+          tVOCParameter = parameter;
+        }
         const value = data[`${parameter.name.toLowerCase()}`];
         if (!value) {
           return;
-        }
-        if (parameter.name === PARAMETER_NAME.TVOC) {
-          tVOCParameter = parameter;
         }
 
         // tvoc accumulation for evaluate tvoc result
@@ -893,32 +898,36 @@ export class ThingService {
     });
 
     // evaluate tVOC parameter
-    const threshold = this.getThingValueThreshold(tVOC, tVOCParameter);
-    const evaluatedParameter = new EvaluatedParameter();
-    if (
-      [
-        PARAMETER_THRESHOLD.GOOD.name,
-        PARAMETER_THRESHOLD.MODERATE.name,
-        PARAMETER_THRESHOLD.SENSITIVE_UNHEALTHY.name,
-      ].includes(threshold.name)
-    ) {
-      evaluatedParameter.type = TYPE.NORMAL;
-    } else {
-      evaluatedParameter.type = TYPE.WARNING;
+    if (tVOCParameter && !data?.tvoc) {
+      const threshold = this.getThingValueThreshold(tVOC, tVOCParameter);
+      const evaluatedParameter = new EvaluatedParameter();
+      if (
+        [
+          PARAMETER_THRESHOLD.GOOD.name,
+          PARAMETER_THRESHOLD.MODERATE.name,
+          PARAMETER_THRESHOLD.SENSITIVE_UNHEALTHY.name,
+        ].includes(threshold.name)
+      ) {
+        evaluatedParameter.type = TYPE.NORMAL;
+      } else {
+        evaluatedParameter.type = TYPE.WARNING;
+      }
+      evaluatedParameter.name = tVOCParameter.name;
+      evaluatedParameter.unit = tVOCParameter.unit;
+      evaluatedParameter.weight = tVOCParameter.weight;
+      evaluatedParameter.value = tVOC;
+      evaluatedParameter.threshold = threshold;
+      evaluatedDeviceData[0].evaluatedParameterStandards.push(
+        evaluatedParameter,
+      );
     }
-    evaluatedParameter.name = tVOCParameter.name;
-    evaluatedParameter.unit = tVOCParameter.unit;
-    evaluatedParameter.weight = tVOCParameter.weight;
-    evaluatedParameter.value = tVOC;
-    evaluatedParameter.threshold = threshold;
-    evaluatedDeviceData[0].evaluatedParameterStandards.push(evaluatedParameter);
 
     return evaluatedDeviceData;
   }
 
   // get the threshold the value is in
   getThingValueThreshold(value: number, parameter: ParameterStandardModel) {
-    let evaluatedValueThreshold: Threshold = undefined;
+    let evaluatedValueThreshold: Threshold = PARAMETER_THRESHOLD.HAZARDOUS;
     parameter.thresholds.forEach((threshold) => {
       if (value >= threshold.min && value < threshold.max) {
         evaluatedValueThreshold = threshold;

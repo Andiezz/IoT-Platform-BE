@@ -210,7 +210,7 @@ export class ParameterStandardService {
 
     if (
       parameterStandard &&
-      parameterStandard._id.toString() !== parameterStandardId.toString()
+      parameterStandard._id.toString() !== parameterStandardId?.toString()
     ) {
       return true;
     }

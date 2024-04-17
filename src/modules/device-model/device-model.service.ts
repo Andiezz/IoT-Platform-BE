@@ -283,7 +283,7 @@ export class DeviceModelService {
 
     if (
       deviceModel &&
-      deviceModel._id.toString() !== deviceModelId.toString()
+      deviceModel._id.toString() !== deviceModelId?.toString()
     ) {
       return true;
     }

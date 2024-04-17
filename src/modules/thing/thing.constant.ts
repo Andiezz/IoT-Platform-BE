@@ -16,14 +16,12 @@ export enum PARAMETER_NAME {
 
 export const PARAMETER_WEIGHT = {
   co: 3,
-  ch4: 0,
-  'pm2.5': 2,
+  'pm2.5': 3,
   pm10: 2,
-  co2: 2,
-  humidity: 1,
-  temperature: 1,
-  nh4: 0,
-  tvoc: 1,
+  co2: 0,
+  humidity: 0,
+  temperature: 0,
+  tvoc: 2,
 };
 
 export interface IParameterThreshold {
@@ -35,31 +33,37 @@ export interface IParameterThreshold {
 export const PARAMETER_THRESHOLD = {
   GOOD: {
     name: 'good',
+    color: 'green',
     min: 0,
     max: 50,
   },
   MODERATE: {
     name: 'moderate',
+    color: 'yellow',
     min: 50,
     max: 100,
   },
   SENSITIVE_UNHEALTHY: {
     name: 'sensitive-unhealthy',
+    color: 'orange',
     min: 100,
     max: 150,
   },
   UNHEALTHY: {
     name: 'unhealthy',
+    color: 'red',
     min: 150,
     max: 200,
   },
-  VERT_UNHEALTHY: {
+  VERY_UNHEALTHY: {
     name: 'very-unhealthy',
+    color: 'purple',
     min: 200,
     max: 300,
   },
-  HARZARDOUS: {
-    name: 'harzardous',
+  HAZARDOUS: {
+    name: 'hazardous',
+    color: 'brown',
     min: 300,
     max: 500,
   },
