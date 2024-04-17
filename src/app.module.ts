@@ -33,6 +33,8 @@ import { IotConsumerModule } from './modules/iot-consumer/iot-consumer.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { SocketModule } from './modules/socket/socket.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ParameterStandardModule } from './modules/parameter-standard/parameter-standard.module';
+import { DeviceModelModule } from './modules/device-model/device-model.module';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     NotificationModule,
     SocketModule,
     DashboardModule,
+    ParameterStandardModule,
+    DeviceModelModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local'],

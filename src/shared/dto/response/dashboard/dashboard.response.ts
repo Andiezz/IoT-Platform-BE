@@ -14,6 +14,7 @@ export class TimeseriesData {
   temperature: number;
   nh4: number;
   count: number;
+  tvoc: number;
   time: string;
   chartType: CHART_TYPE;
 }

@@ -1,15 +1,14 @@
-import { TYPE } from "src/modules/notification/template-notification";
-
-export class Parameter {
+export class EvaluatedParameter {
   name: string;
-  value: string;
+  value: number;
   unit: string;
-  message: string;
-  type?: string;
-}
-
-export class CreateExceedThresholdNotificationDto {
-  deviceName: string;
-  type: string = TYPE.WARNING;
-  parameters: Parameter[];
+  weight: number;
+  threshold: {
+    name: string;
+    color: string;
+    min: number;
+    max: number;
+  };
+  type: string;
+  iaqiValue?: number;
 }

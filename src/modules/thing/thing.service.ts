@@ -22,9 +22,9 @@ import {
   Certificate,
   DEVICE_STATUS,
   Device,
+  DeviceWithEvaluatedParameters,
   Location,
   Manager,
-  ParameterStandard,
   ThingModel,
 } from 'src/shared/models/thing.model';
 import { EXCULDE_BASE_MODEL } from 'src/shared/dto/response/constants/exclude-base-model.response';
@@ -35,9 +35,18 @@ import {
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { findRelative } from 'src/shared/utils/find-relative.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import { PARAMETER_MESSAGE, PARAMETER_NAME } from './thing.constant';
+import {
+  PARAMETER_NAME,
+  PARAMETER_THRESHOLD,
+  PARAMETER_THRESHOLD_NAME,
+} from './thing.constant';
 import { TYPE } from '../notification/template-notification';
-import { Parameter } from 'src/shared/dto/request/notification/create.request';
+import {
+  ParameterStandardModel,
+  Threshold,
+} from 'src/shared/models/parameter-standard.model';
+import { DeviceModelService } from '../device-model/device-model.service';
+import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
 
 @Injectable()
 export class ThingService {
@@ -49,6 +58,7 @@ export class ThingService {
     private readonly client: MongoClient,
     private readonly cfg: ConfigService,
     private readonly awsService: AwsService,
+    private readonly deviceModelService: DeviceModelService,
   ) {}
 
   public async create(
@@ -83,26 +93,39 @@ export class ThingService {
       thingModel.updatedBy = user._id;
 
       // II.1 Create devices
-      thingModel.devices = devices.map((device) => {
-        const deviceModel = new Device();
-        deviceModel.name = device.name;
-        deviceModel.information = device.information;
-        deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
-        deviceModel.type = device?.type;
-        deviceModel.model = device.model;
-        deviceModel.parameterStandards = device.parameterStandards.map(
-          (parameterStandard) => {
-            const parameterStandardModel = new ParameterStandard();
-            parameterStandardModel.name = parameterStandard.name;
-            parameterStandardModel.unit = parameterStandard.unit;
-            parameterStandardModel.min = parameterStandard?.min;
-            parameterStandardModel.max = parameterStandard?.max;
-            return parameterStandardModel;
-          },
-        );
+      thingModel.devices = await Promise.all(
+        devices.map(async (device) => {
+          const deviceModel = new Device();
+          deviceModel.name = device.name;
+          deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
+          deviceModel.model = device.model;
+          deviceModel.parameterStandardDefault =
+            device.parameterStandardDefault;
 
-        return deviceModel;
-      });
+          // parameter standard custom
+          if (deviceModel.parameterStandardDefault === false) {
+            deviceModel.parameterStandards = device.parameterStandards.map(
+              (parameterStandard) => {
+                const parameterStandardModel = new ParameterStandardModel();
+                parameterStandardModel.name = parameterStandard.name;
+                parameterStandardModel.unit = parameterStandard.unit;
+                parameterStandardModel.weight = parameterStandard.weight;
+                parameterStandardModel.thresholds =
+                  parameterStandard.thresholds;
+                return parameterStandardModel;
+              },
+            );
+          } else {
+            // parameter standard default value
+            const deviceDefaultModel =
+              await this.deviceModelService.getDeviceModel(device.model);
+            deviceModel.parameterStandards =
+              deviceDefaultModel.parameterStandards as ParameterStandardModel[];
+          }
+
+          return deviceModel;
+        }),
+      );
 
       // II.2 Assign managers
       thingModel.managers = managers.map((manager) => {
@@ -204,25 +227,37 @@ export class ThingService {
       }
 
       // II. Update devices
-      const associatedDevices = devices.map((device) => {
-        const deviceModel = new Device();
-        deviceModel.name = device.name;
-        deviceModel.information = device.information;
-        deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
-        deviceModel.type = device?.type;
-        deviceModel.model = device.model;
-        deviceModel.parameterStandards = device.parameterStandards.map(
-          (parameterStandard) => {
-            const parameterStandardModel = new ParameterStandard();
-            parameterStandardModel.name = parameterStandard.name;
-            parameterStandardModel.unit = parameterStandard.unit;
-            parameterStandardModel.min = parameterStandard?.min;
-            parameterStandardModel.max = parameterStandard?.max;
-            return parameterStandardModel;
-          },
-        );
-        return deviceModel;
-      });
+      const associatedDevices = await Promise.all(
+        devices.map(async (device) => {
+          const deviceModel = new Device();
+          deviceModel.name = device.name;
+          deviceModel.status = DEVICE_STATUS.PENDING_SETUP;
+          deviceModel.model = device.model;
+          deviceModel.parameterStandardDefault =
+            device.parameterStandardDefault;
+          // parameter standard custom
+          if (deviceModel.parameterStandardDefault === false) {
+            deviceModel.parameterStandards = device.parameterStandards.map(
+              (parameterStandard) => {
+                const parameterStandardModel = new ParameterStandardModel();
+                parameterStandardModel.name = parameterStandard.name;
+                parameterStandardModel.unit = parameterStandard.unit;
+                parameterStandardModel.weight = parameterStandard.weight;
+                parameterStandardModel.thresholds =
+                  parameterStandard.thresholds;
+                return parameterStandardModel;
+              },
+            );
+          } else {
+            // parameter standard default value
+            const deviceDefaultModel =
+              await this.deviceModelService.getDeviceModel(device.model);
+            deviceModel.parameterStandards =
+              deviceDefaultModel.parameterStandards as ParameterStandardModel[];
+          }
+          return deviceModel;
+        }),
+      );
 
       // III. Update managers
       const thingManagers = managers.map((manager) => {
@@ -345,7 +380,11 @@ export class ThingService {
     }
   }
 
-  public async detail(thingId: ObjectId, user: UserModel) {
+  public async detail(
+    thingId: ObjectId,
+    user: UserModel,
+    excludeFields: object = {},
+  ) {
     try {
       const match = { $and: [] };
       match['$and'].push({ _id: thingId, isDeleted: false });
@@ -372,12 +411,58 @@ export class ThingService {
             },
           },
           {
+            $unwind: {
+              path: '$devices',
+            },
+          },
+          {
+            $lookup: {
+              from: NormalCollection.DEVICE_MODEL,
+              localField: 'devices.model',
+              foreignField: '_id',
+              let: {
+                dName: '$devices.name',
+                dStatus: '$devices.status',
+                dParameterStandardDefault: '$devices.parameterStandardDefault',
+                dParameterStandards: '$devices.parameterStandards',
+              },
+              pipeline: [
+                {
+                  $project: {
+                    ...EXCULDE_BASE_MODEL,
+                    _id: 0,
+                  },
+                },
+                {
+                  $project: {
+                    name: '$$dName',
+                    status: '$$dStatus',
+                    model: '$$ROOT',
+                    parameterStandardDefault: '$$dParameterStandardDefault',
+                    parameterStandards: '$$dParameterStandards',
+                  },
+                },
+              ],
+              as: 'devices',
+            },
+          },
+          {
+            $unwind: {
+              path: '$devices',
+            },
+          },
+          {
+            $group: {
+              _id: '$_id',
+              devices: {
+                $push: '$devices',
+              },
+            },
+          },
+          {
             $project: {
-              createdBy: 0,
-              updatedBy: 0,
-              createdOn: 0,
-              updatedOn: 0,
               certificate: 0,
+              ...excludeFields,
             },
           },
         ])
@@ -436,6 +521,55 @@ export class ThingService {
               as: 'managers.user',
             },
           },
+          {
+            $unwind: {
+              path: '$devices',
+            },
+          },
+          {
+            $lookup: {
+              from: NormalCollection.DEVICE_MODEL,
+              localField: 'devices.model',
+              foreignField: '_id',
+              let: {
+                dName: '$devices.name',
+                dStatus: '$devices.status',
+                dParameterStandardDefault: '$devices.parameterStandardDefault',
+                dParameterStandards: '$devices.parameterStandards',
+              },
+              pipeline: [
+                {
+                  $project: {
+                    ...EXCULDE_BASE_MODEL,
+                    _id: 0,
+                  },
+                },
+                {
+                  $project: {
+                    name: '$$dName',
+                    status: '$$dStatus',
+                    model: '$$ROOT',
+                    parameterStandardDefault: '$$dParameterStandardDefault',
+                    parameterStandards: '$$dParameterStandards',
+                  },
+                },
+              ],
+              as: 'devices',
+            },
+          },
+          {
+            $unwind: {
+              path: '$devices',
+            },
+          },
+          {
+            $group: {
+              _id: '$_id',
+              devices: {
+                $push: '$devices',
+              },
+            },
+          },
           { $match: match },
           { $sort: { [`${sortBy}`]: sortOrder } },
           {
@@ -466,7 +600,7 @@ export class ThingService {
   public async updateAssociatedDevice(
     thingId: ObjectId,
     deviceName: string,
-    { name, information, model, type, parameterStandards }: DeviceDto,
+    { name, model, parameterStandards, parameterStandardDefault }: DeviceDto,
     user: UserModel,
   ): Promise<SaveThingResponse> {
     const session = this.client.startSession();
@@ -495,10 +629,20 @@ export class ThingService {
       // II. Update new device
       const updatedDevice = new Device();
       updatedDevice.name = name;
-      updatedDevice.information = information;
       updatedDevice.model = model;
-      updatedDevice.type = type;
-      updatedDevice.parameterStandards = parameterStandards;
+
+      if (parameterStandardDefault === false) {
+        updatedDevice.parameterStandards =
+          parameterStandards as ParameterStandardModel[];
+      } else {
+        // parameter standard default value
+        const deviceDefaultModel = await this.deviceModelService.getDeviceModel(
+          model,
+        );
+        updatedDevice.parameterStandards =
+          deviceDefaultModel.parameterStandards as ParameterStandardModel[];
+      }
+
       devices[toBeUpdateDeviceIndex] = updatedDevice;
 
       await this.thingCollection.updateOne(
@@ -648,39 +792,6 @@ export class ThingService {
     }
   }
 
-  public validateThingData(data: ThingData, devices: Device[]) {
-    if (devices.length === 0) {
-      return;
-    }
-
-    devices.forEach((device) => {
-      device.parameterStandards.forEach((parameter, j) => {
-        const value = data[`${parameter.name.toLowerCase()}`];
-        if (!value) {
-          return;
-        }
-
-        let message: string;
-        let type: string;
-        if (parameter?.max && value > parameter.max) {
-          message = PARAMETER_MESSAGE.ABOVE_STANDARD;
-          type = TYPE.WARNING;
-        } else if (parameter?.min && value < parameter.min) {
-          message = PARAMETER_MESSAGE.BELOW_STANDARD;
-          type = TYPE.WARNING;
-        } else {
-          message = PARAMETER_MESSAGE.STANDARD;
-        }
-
-        device.parameterStandards[j]['message'] = message;
-        device.parameterStandards[j]['value'] = value;
-        type && (device.parameterStandards[j]['type'] = type);
-      });
-    });
-
-    return devices;
-  }
-
   public async isNameExist(
     name: string,
     filter?: object,
@@ -711,5 +822,117 @@ export class ThingService {
     if (!nameIsExist) throw new NotFoundException('thing-not-existed');
 
     return nameIsExist;
+  }
+
+  public validateThingData(data: ThingData, devices: Device[]) {
+    if (devices.length === 0) {
+      return;
+    }
+
+    let tVOC = 0;
+    let tVOCParameter: ParameterStandardModel;
+    const evaluatedDeviceData = devices.map((device) => {
+      const evaluatedDevice = new DeviceWithEvaluatedParameters();
+      evaluatedDevice.name = device.name;
+      evaluatedDevice.model = device.model;
+      evaluatedDevice.status = device.status;
+      evaluatedDevice.parameterStandards = device.parameterStandards;
+      evaluatedDevice.parameterStandardDefault =
+        device.parameterStandardDefault;
+      evaluatedDevice.evaluatedParameterStandards = [];
+
+      device.parameterStandards.forEach((parameter) => {
+        if (parameter.name === PARAMETER_NAME.TVOC) {
+          tVOCParameter = parameter;
+        }
+        const value = data[`${parameter.name.toLowerCase()}`];
+        if (!value) {
+          return;
+        }
+
+        // tvoc accumulation for evaluate tvoc result
+        if (
+          [
+            PARAMETER_NAME.Aceton.toString(),
+            PARAMETER_NAME.Alcohol.toString(),
+            PARAMETER_NAME.LPG.toString(),
+            PARAMETER_NAME.Toluen.toString(),
+          ].includes(parameter.name)
+        ) {
+          tVOC += value;
+        }
+
+        // skip if value is fine
+        const threshold = this.getThingValueThreshold(value, parameter);
+        if (
+          [
+            PARAMETER_THRESHOLD.GOOD.name,
+            PARAMETER_THRESHOLD.MODERATE.name,
+            PARAMETER_THRESHOLD.SENSITIVE_UNHEALTHY.name,
+          ].includes(threshold.name)
+        ) {
+          const evaluatedParameter = new EvaluatedParameter();
+          evaluatedParameter.name = parameter.name;
+          evaluatedParameter.unit = parameter.unit;
+          evaluatedParameter.weight = parameter.weight;
+          evaluatedParameter.value = value;
+          evaluatedParameter.threshold = threshold;
+          evaluatedParameter.type = TYPE.NORMAL;
+
+          evaluatedDevice.evaluatedParameterStandards.push(evaluatedParameter);
+          return;
+        }
+
+        // create parameter with the evaluated result
+        const evaluatedParameter = new EvaluatedParameter();
+        evaluatedParameter.name = parameter.name;
+        evaluatedParameter.unit = parameter.unit;
+        evaluatedParameter.weight = parameter.weight;
+        evaluatedParameter.value = value;
+        evaluatedParameter.threshold = threshold;
+        evaluatedParameter.type = TYPE.WARNING;
+
+        evaluatedDevice.evaluatedParameterStandards.push(evaluatedParameter);
+      });
+      return evaluatedDevice;
+    });
+
+    // evaluate tVOC parameter
+    if (tVOCParameter && !data?.tvoc) {
+      const threshold = this.getThingValueThreshold(tVOC, tVOCParameter);
+      const evaluatedParameter = new EvaluatedParameter();
+      if (
+        [
+          PARAMETER_THRESHOLD.GOOD.name,
+          PARAMETER_THRESHOLD.MODERATE.name,
+          PARAMETER_THRESHOLD.SENSITIVE_UNHEALTHY.name,
+        ].includes(threshold.name)
+      ) {
+        evaluatedParameter.type = TYPE.NORMAL;
+      } else {
+        evaluatedParameter.type = TYPE.WARNING;
+      }
+      evaluatedParameter.name = tVOCParameter.name;
+      evaluatedParameter.unit = tVOCParameter.unit;
+      evaluatedParameter.weight = tVOCParameter.weight;
+      evaluatedParameter.value = tVOC;
+      evaluatedParameter.threshold = threshold;
+      evaluatedDeviceData[0].evaluatedParameterStandards.push(
+        evaluatedParameter,
+      );
+    }
+
+    return evaluatedDeviceData;
+  }
+
+  // get the threshold the value is in
+  getThingValueThreshold(value: number, parameter: ParameterStandardModel) {
+    let evaluatedValueThreshold: Threshold = PARAMETER_THRESHOLD.HAZARDOUS;
+    parameter.thresholds.forEach((threshold) => {
+      if (value >= threshold.min && value < threshold.max) {
+        evaluatedValueThreshold = threshold;
+      }
+    });
+    return evaluatedValueThreshold;
   }
 }

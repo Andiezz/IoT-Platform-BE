@@ -6,26 +6,10 @@ import {
   IsNotEmptyObject,
   IsNumber,
   IsObject,
-  IsOptional
 } from 'class-validator';
+import { ObjectId } from 'mongodb';
 import { DEVICE_STATUS } from 'src/shared/models/thing.model';
-
-class ParameterStandardDto {
-  @ApiProperty()
-  @IsNotEmpty()
-  @Transform(({ value }: { value: string }) => value.trim())
-  public name: string;
-
-  @ApiProperty()
-  @IsNotEmpty()
-  public unit: string;
-
-  @ApiPropertyOptional()
-  public min?: number;
-
-  @ApiPropertyOptional()
-  public max?: number;
-}
+import { CreateParameterStandardDto } from '../parameter-standard/create.request';
 
 export class DeviceDto {
   @ApiProperty()
@@ -34,25 +18,18 @@ export class DeviceDto {
   public name: string;
 
   @ApiPropertyOptional()
-  @IsNotEmpty()
-  @Transform(({ value }: { value: string }) => value.trim())
-  public information?: string;
-
-  @ApiPropertyOptional()
   public status: DEVICE_STATUS = DEVICE_STATUS.PENDING_SETUP;
-
-  @ApiPropertyOptional()
-  @Transform(({ value }: { value: string }) => value.trim())
-  public type?: string;
 
   @ApiProperty()
   @IsNotEmpty()
-  @Transform(({ value }: { value: string }) => value.trim())
-  public model: string;
+  @Transform(({ value }: { value: string }) => new ObjectId(value))
+  public model: ObjectId;
 
-  @ApiProperty({ type: [ParameterStandardDto] })
-  @IsNotEmpty()
-  public parameterStandards: ParameterStandardDto[];
+  @ApiPropertyOptional({ type: [CreateParameterStandardDto] })
+  public parameterStandards?: CreateParameterStandardDto[];
+
+  @ApiPropertyOptional()
+  parameterStandardDefault: boolean = true;
 }
 
 export class LocationDto {
@@ -113,7 +90,6 @@ export class SaveThingDto {
   public managers: ManagerDto[];
 
   @ApiPropertyOptional({ type: [DeviceDto] })
-  @IsOptional()
   @Type(() => DeviceDto)
-  devices?: DeviceDto[];
+  devices: DeviceDto[];
 }

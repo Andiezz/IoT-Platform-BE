@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MongoModule } from '../mongodb';
 import { NormalCollection } from 'src/shared/constants/mongo.collection';
 import { UserModule } from '../user/user.module';

@@ -19,20 +19,23 @@ export interface DeviceStatusMessage {
 }
 
 export interface ThingData {
-  thingId: string;
-  timestamp: string;
-  'pm2.5': number;
-  pm10: number;
-  temperature: number;
-  humidity: number;
-  lpg: number;
-  ch4: number;
-  co: number;
-  alcohol: number;
-  co2: number;
-  toluen: number;
-  nh4: number;
-  aceton: number;
+  metadata: {
+    thingId: string
+  };
+  timestamp?: string;
+  'pm2.5'?: number;
+  pm10?: number;
+  temperature?: number;
+  humidity?: number;
+  lpg?: number;
+  ch4?: number;
+  co?: number;
+  alcohol?: number;
+  co2?: number;
+  toluen?: number;
+  nh4?: number;
+  aceton?: number;
+  tvoc?: number;
 }
 
 export type MqttPayload = DeviceStatusMessage | ThingData;

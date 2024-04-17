@@ -1,10 +1,5 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
-import { Collection, Document, MongoClient, ObjectId } from 'mongodb';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Collection, MongoClient, ObjectId } from 'mongodb';
 import { InjectClient, InjectCollection } from 'src/modules/mongodb';
 import { NormalCollection } from 'src/shared/constants/mongo.collection';
 import { ConfigService } from '@nestjs/config';
@@ -15,8 +10,15 @@ import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 import { NotificationService } from '../notification/notification.service';
 import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
 import { ThingModel } from 'src/shared/models/thing.model';
-import { PARAMETER_NAME, PARAMETER_WEIGHT } from '../thing/thing.constant';
+import { getParameterThreshold } from '../thing/thing.constant';
 import { checkValueExistInObjectArray } from 'src/shared/utils/array.utils';
+import { ThingData } from '../iot-consumer/iot-consumer.interface';
+import {
+  calculateOverallIndoorAirQualityIndex,
+  convertParameterValueToIAQI,
+} from '../parameter-standard/parameter-standard.constants';
+import { TYPE } from '../notification/template-notification';
+import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
 
 @Injectable()
 export class DashboardService {
@@ -60,7 +62,12 @@ export class DashboardService {
       );
 
       // II.2 Get thing detail
-      const getThingDetailPromise = this.getThingDetail(thingId, user);
+      const getThingDetailPromise = this.getThingDetail(thingId, user, {
+        createdBy: 0,
+        updatedBy: 0,
+        createdOn: 0,
+        updatedOn: 0,
+      });
 
       // II.3 Get thing warning
       const getThingWarningPromise = this.getThingWarning(thingId);
@@ -71,6 +78,7 @@ export class DashboardService {
         getThingWarningPromise,
       ]);
 
+      // II.4 Get thing quality report
       const qualityReport = await this.getQualityReport(
         thingId,
         getDashboardDto,
@@ -145,6 +153,7 @@ export class DashboardService {
             lpg: { $avg: '$lpg' },
             temperature: { $avg: '$temperature' },
             nh4: { $avg: '$nh4' },
+            tvoc: { $avg: '$tvoc' },
             count: { $sum: 1 },
           },
         },
@@ -218,6 +227,7 @@ export class DashboardService {
             lpg: { $avg: '$lpg' },
             temperature: { $avg: '$temperature' },
             nh4: { $avg: '$nh4' },
+            tvoc: { $avg: '$tvoc' },
             count: { $sum: 1 },
           },
         },
@@ -233,7 +243,7 @@ export class DashboardService {
         ])
         .toArray()) as TimeseriesData[];
 
-      const iaqResult = this.calculateReport(timeseriesData[0], thing);
+      const iaqResult = await this.calculateReport(timeseriesData[0], thing);
 
       return {
         iaqResult,
@@ -247,7 +257,7 @@ export class DashboardService {
 
   public async getThingWarning(thingId: ObjectId) {
     try {
-      const warnings = this.notificationService.getThingWarnings(thingId);
+      const warnings = await this.notificationService.getThingWarnings(thingId);
       return warnings;
     } catch (error) {
       this.logger.error(error);
@@ -255,9 +265,17 @@ export class DashboardService {
     }
   }
 
-  public async getThingDetail(thingId: ObjectId, user: UserModel) {
+  public async getThingDetail(
+    thingId: ObjectId,
+    user: UserModel,
+    excludeFields: object,
+  ) {
     try {
-      const thing = await this.thingService.detail(thingId, user);
+      const thing = await this.thingService.detail(
+        thingId,
+        user,
+        excludeFields,
+      );
       return thing;
     } catch (error) {
       this.logger.error(error);
@@ -265,59 +283,48 @@ export class DashboardService {
     }
   }
 
-  public calculateReport(timeseriesData: TimeseriesData, thing: ThingModel) {
-    // get parameter standard
-    const parameterStandards = thing.devices
-      .map((device) => {
-        return device.parameterStandards.map((parameter) => {
-          return parameter;
-        });
-      })
-      .flat(1);
+  public async calculateReport(
+    timeseriesData: TimeseriesData,
+    thing: ThingModel,
+  ) {
+    const thingData: ThingData = {
+      ...timeseriesData,
+      metadata: {
+        thingId: thing._id.toString(),
+      },
+    };
+    const evaluatedParameters =
+      await this.notificationService.classifyTypeAndTitle(thing._id, thingData);
 
     // evaluate quality
-    let qualityResult = 0;
-    let tVOC = 0;
-    const acceptableSubstances = [];
-    const unAcceptableSubstances = [];
-    const tVOCSubstances = [];
-    parameterStandards.forEach((parameterStandard, i) => {
-      const { name, min, max } = parameterStandard;
-      if ((min !== 0 && !min) || !max) {
-        return;
-      }
-      const timeseriesFieldName = name.toLowerCase().replace(' ', '');
-      const value = timeseriesData[`${timeseriesFieldName}`];
+    const acceptableSubstances: EvaluatedParameter[] = [];
+    const unAcceptableSubstances: EvaluatedParameter[] = [];
+    evaluatedParameters.forEach((evaluatedParameter) => {
+      const { type } = evaluatedParameter;
+      const iaqiValue = convertParameterValueToIAQI(evaluatedParameter);
 
-      // evaluate tVOC
-      if (
-        [
-          PARAMETER_NAME.Aceton,
-          PARAMETER_NAME.Alcohol,
-          PARAMETER_NAME.LPG,
-          PARAMETER_NAME.Toluen,
-        ].includes(name)
-      ) {
-        tVOCSubstances.push(parameterStandard);
-        tVOC += value;
-        return;
+      if (type === TYPE.WARNING) {
+        unAcceptableSubstances.push({
+          ...evaluatedParameter,
+          iaqiValue,
+        } as EvaluatedParameter);
+      } else if (type === TYPE.NORMAL) {
+        acceptableSubstances.push({
+          ...evaluatedParameter,
+          iaqiValue,
+        } as EvaluatedParameter);
       }
-
-      if (value < min || value > max) {
-        qualityResult += PARAMETER_WEIGHT[`${timeseriesFieldName}`];
-        unAcceptableSubstances.push(parameterStandard);
-        return;
-      }
-
-      if (i === parameterStandards.length - 1 && tVOC > PARAMETER_WEIGHT.tvoc) {
-        qualityResult += PARAMETER_WEIGHT.tvoc;
-        unAcceptableSubstances.push(...tVOCSubstances);
-      }
-      acceptableSubstances.push(parameterStandard);
     });
 
+    // calculate general iaqi
+    const generalIaqi = calculateOverallIndoorAirQualityIndex([
+      ...acceptableSubstances,
+      ...unAcceptableSubstances,
+    ]);
+    const generalIaqiReport = getParameterThreshold(generalIaqi);
+
     return {
-      qualityResult,
+      generalIaqiReport,
       acceptableSubstances,
       unAcceptableSubstances,
     };

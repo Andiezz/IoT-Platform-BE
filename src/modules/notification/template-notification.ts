@@ -1,16 +1,30 @@
+import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
+import { convertParameterValueToIAQI } from '../parameter-standard/parameter-standard.constants';
+
 export const TITLE = {
-  EXCEED_THRESHOLD: 'Parameter exceed allowed threshold',
+  EXCEED_THRESHOLD: 'Parameters in warning threshold',
 };
 
+// $1: thingId
+// $2: Parameter - 'Threshold name': IAQI\n -> Ex: PM2.5 - Good: 30
 export const CONTENT = {
-  ABOVE_STANDARD: `Thing $1 - Device $2 has the following parameters exceeded the allowed threshold:
-    $3 
-    which is $4 respectively.`,
-  BELOW_STANDARD: `Thing $1 - Device $2 has the following parameters falled behind the allowed threshold:
-    $3 
-    which is $4 respectively.`,
+  WARNING_THRESHOLD: `Thing $1 has the following parameters being in warning threshold:
+    $2.`,
 };
 
 export const TYPE = {
   WARNING: 'Warning',
+  NORMAL: 'Normal',
+};
+
+export const formatTemplateContentArgument = (
+  parameters: EvaluatedParameter[],
+) => {
+  let argument = '';
+  parameters.forEach((parameter) => {
+    const iaqiValue = convertParameterValueToIAQI(parameter);
+    const parameterContent = `${parameter.name} - ${parameter.threshold.name}: ${iaqiValue}\n`;
+    argument += parameterContent;
+  });
+  return argument;
 };

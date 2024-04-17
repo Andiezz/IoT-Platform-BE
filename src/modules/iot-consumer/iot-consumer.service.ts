@@ -12,6 +12,7 @@ import { ThingService } from '../thing/thing.service';
 import { ObjectId } from 'mongodb';
 import { NotificationService } from '../notification/notification.service';
 import { SocketGateway } from '../socket/socket.gateway';
+import { TYPE } from '../notification/template-notification';
 
 @Injectable()
 export class IotMessageProcessor
@@ -62,7 +63,7 @@ export class IotMessageProcessor
       return;
     }
 
-    this.iotClient.on('connect', () => {
+    this.iotClient.on('connect', async () => {
       this.logger.log('Consumer connected to iot core');
 
       this.iotClient.subscribe('presence/connected/#', (e) => {
@@ -109,13 +110,18 @@ export class IotMessageProcessor
     message: ThingData,
   ) {
     // check which notification type
-    const createNotificationDtos =
+    const evaluatedParameters =
       await this.notificationService.classifyTypeAndTitle(thingId, message);
 
+    // get warning parameters
+    const warningParameters = evaluatedParameters.filter(
+      (e) => e.type === TYPE.WARNING,
+    );
+
     // create notifiaction and publish socket
-    await this.notificationService.createExceedThresholdNotification(
+    await this.notificationService.createWarningThresholdNotificationDto(
       thingId,
-      createNotificationDtos,
+      warningParameters,
     );
   }
 
@@ -159,13 +165,10 @@ export class IotMessageProcessor
       await this.processTriggerNotification(new ObjectId(params[1]), thingData);
 
       // 2. publish real time data socket
-      await this.socketGateway.publish(
-        `/thing-real-time-data/${params[1]}`,
-        {
-          channel: 'thing-real-time-data-process',
-          data: thingData,
-        },
-      );
+      await this.socketGateway.publish(`/thing-real-time-data/${params[1]}`, {
+        channel: 'thing-real-time-data-process',
+        data: thingData,
+      });
     }
   }
 }
