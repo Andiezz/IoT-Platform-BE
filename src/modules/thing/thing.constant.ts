@@ -30,6 +30,13 @@ export interface IParameterThreshold {
   max: number;
 }
 
+export class ParameterThreshold {
+  name: string;
+  min: number;
+  max: number;
+}
+
+
 export const PARAMETER_THRESHOLD = {
   GOOD: {
     name: 'good',

@@ -6,7 +6,10 @@ import { ObjectId } from 'mongodb';
 import { UserModel } from 'src/shared/models/user.model';
 import { ApiOkResponseBase } from 'src/shared/utils/swagger.utils';
 import { GetDashboardDto } from 'src/shared/dto/request/dashboard/get-dashboard.request';
-import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
+import {
+  GetDashboardResponse,
+  TimeseriesData,
+} from 'src/shared/dto/response/dashboard/dashboard.response';
 
 @ApiTags('dashboard')
 @Controller('dashboard')
@@ -15,7 +18,7 @@ export class DashboardController {
   constructor(private readonly service: DashboardService) {}
 
   @Get('thing/:thingId')
-  @ApiOkResponseBase(Array<TimeseriesData>)
+  @ApiOkResponseBase(GetDashboardResponse)
   public async getTimeseriesData(
     @Param('thingId') thingId: string,
     @Query() getDashboardDto: GetDashboardDto,

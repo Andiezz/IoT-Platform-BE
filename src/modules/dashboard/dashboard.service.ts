@@ -1,14 +1,13 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { Collection, MongoClient, ObjectId } from 'mongodb';
-import { InjectClient, InjectCollection } from 'src/modules/mongodb';
-import { NormalCollection } from 'src/shared/constants/mongo.collection';
+import { MongoClient, ObjectId } from 'mongodb';
+import { InjectClient } from 'src/modules/mongodb';
 import { ConfigService } from '@nestjs/config';
 import { UserModel } from 'src/shared/models/user.model';
 import { ThingService } from '../thing/thing.service';
 import { GetDashboardDto } from 'src/shared/dto/request/dashboard/get-dashboard.request';
 import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 import { NotificationService } from '../notification/notification.service';
-import { TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
+import { GetDashboardResponse, TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
 import { ThingModel } from 'src/shared/models/thing.model';
 import { getParameterThreshold } from '../thing/thing.constant';
 import { checkValueExistInObjectArray } from 'src/shared/utils/array.utils';
@@ -24,10 +23,6 @@ import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.r
 export class DashboardService {
   private readonly logger: Logger = new Logger(DashboardService.name);
   constructor(
-    @InjectCollection(NormalCollection.THING)
-    private readonly thingCollection: Collection,
-    @InjectCollection(NormalCollection.USER)
-    private readonly userCollection: Collection,
     @InjectClient()
     private readonly client: MongoClient,
     private readonly cfg: ConfigService,
@@ -39,7 +34,7 @@ export class DashboardService {
     thingId: ObjectId,
     getDashboardDto: GetDashboardDto,
     user: UserModel,
-  ) {
+  ): Promise<GetDashboardResponse> {
     try {
       const { from, to } = getDashboardDto;
       // I. Validate data and permissions
@@ -82,7 +77,7 @@ export class DashboardService {
       const qualityReport = await this.getQualityReport(
         thingId,
         getDashboardDto,
-        thingDetail as ThingModel,
+        thingDetail,
       );
 
       return {

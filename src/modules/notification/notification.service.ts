@@ -197,7 +197,7 @@ export class NotificationService {
       ])
       .toArray();
 
-    return notifications[0];
+    return notifications[0] as NotificationModel;
   }
 
   async classifyTypeAndTitle(thingId: ObjectId, data: ThingData) {

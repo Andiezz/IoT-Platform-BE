@@ -38,7 +38,6 @@ import { ThingData } from '../iot-consumer/iot-consumer.interface';
 import {
   PARAMETER_NAME,
   PARAMETER_THRESHOLD,
-  PARAMETER_THRESHOLD_NAME,
 } from './thing.constant';
 import { TYPE } from '../notification/template-notification';
 import {
@@ -469,7 +468,7 @@ export class ThingService {
         .toArray();
 
       if (!thing.length) throw new NotFoundException('thing-not-found');
-      return thing[0];
+      return thing[0] as ThingModel;
     } catch (error) {
       this.logger.error(error);
       throw new BadRequestException(error.message);

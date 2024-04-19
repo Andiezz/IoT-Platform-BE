@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ObjectId } from 'mongodb';
 import {
   Certificate,
   DEVICE_STATUS,
@@ -9,7 +10,7 @@ import {
 
 export class ThingResponse {
   @ApiProperty()
-  public _id: string;
+  public _id: string | ObjectId;
 
   @ApiProperty()
   public name: string;
@@ -33,8 +34,8 @@ export class ThingResponse {
   devices: Device[];
 
   @ApiProperty()
-  createdOn: string;
+  createdOn: Date;
 
   @ApiProperty()
-  updatedOn: string;
+  updatedOn: Date;
 }
