@@ -6,10 +6,7 @@ import { ObjectId } from 'mongodb';
 import { UserModel } from 'src/shared/models/user.model';
 import { ApiOkResponseBase } from 'src/shared/utils/swagger.utils';
 import { GetDashboardDto } from 'src/shared/dto/request/dashboard/get-dashboard.request';
-import {
-  GetDashboardResponse,
-  TimeseriesData,
-} from 'src/shared/dto/response/dashboard/dashboard.response';
+import { GetDashboardResponse } from 'src/shared/dto/response/dashboard/dashboard.response';
 
 @ApiTags('dashboard')
 @Controller('dashboard')

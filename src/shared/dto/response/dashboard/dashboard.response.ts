@@ -1,7 +1,9 @@
-import { IParameterThreshold, ParameterThreshold } from 'src/modules/thing/thing.constant';
+import {
+  IParameterThreshold,
+  ParameterThreshold,
+} from 'src/modules/thing/thing.constant';
 import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 import { NotificationModel } from 'src/shared/models/notification.model';
-import { ThingModel } from 'src/shared/models/thing.model';
 import { EvaluatedParameter } from '../../request/notification/create.request';
 import { ApiProperty } from '@nestjs/swagger';
 import { ThingResponse } from '../thing/detail.response';
@@ -39,7 +41,7 @@ export class TimeseriesData {
 
   @ApiProperty()
   temperature: number;
-  
+
   @ApiProperty()
   nh4: number;
 
@@ -67,7 +69,6 @@ export class IAQResult {
   unAcceptableSubstances: EvaluatedParameter[];
 }
 
-
 export class QualityReportDto {
   @ApiProperty({ type: IAQResult })
   iaqResult: IAQResult;
@@ -80,10 +81,10 @@ export class GetDashboardResponse {
   @ApiProperty({ type: [TimeseriesData] })
   timeseriesData: TimeseriesData[];
 
-  @ApiProperty({ type:NotificationModel})
+  @ApiProperty({ type: NotificationModel })
   thingWarning: NotificationModel;
 
-  @ApiProperty({ type:ThingResponse})
+  @ApiProperty({ type: ThingResponse })
   thingDetail: ThingResponse;
 
   @ApiProperty({ type: QualityReportDto })

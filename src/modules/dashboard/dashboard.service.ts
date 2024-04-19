@@ -7,7 +7,10 @@ import { ThingService } from '../thing/thing.service';
 import { GetDashboardDto } from 'src/shared/dto/request/dashboard/get-dashboard.request';
 import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 import { NotificationService } from '../notification/notification.service';
-import { GetDashboardResponse, TimeseriesData } from 'src/shared/dto/response/dashboard/dashboard.response';
+import {
+  GetDashboardResponse,
+  TimeseriesData,
+} from 'src/shared/dto/response/dashboard/dashboard.response';
 import { ThingModel } from 'src/shared/models/thing.model';
 import { getParameterThreshold } from '../thing/thing.constant';
 import { checkValueExistInObjectArray } from 'src/shared/utils/array.utils';
