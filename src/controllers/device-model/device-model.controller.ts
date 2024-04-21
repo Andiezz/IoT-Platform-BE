@@ -8,11 +8,13 @@ import {
   Put,
   Query,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { ObjectId } from 'mongodb';
 import { Roles } from 'src/decorators/roles.decorator';
 import { User } from 'src/decorators/user.decorator';
+import { RolesGuard } from 'src/guards/roles.guard';
 import { DeviceModelService } from 'src/modules/device-model/device-model.service';
 import { CreateDeviceModelDto } from 'src/shared/dto/request/device-model/create.request';
 import { ListDeviceModelDto } from 'src/shared/dto/request/device-model/list.request';
@@ -21,13 +23,14 @@ import { ROLE, UserModel } from 'src/shared/models/user.model';
 @ApiTags('device-model')
 @Controller('device-model')
 @ApiBearerAuth()
-@Roles([ROLE.ADMIN])
+@UseGuards(RolesGuard)
 export class DeviceModelController {
   constructor(private readonly deviceModelService: DeviceModelService) {}
 
   @Post()
   @ApiBody({ type: CreateDeviceModelDto })
   @HttpCode(200)
+  @Roles([ROLE.ADMIN])
   async create(
     @Body() body: CreateDeviceModelDto,
     @User() user: UserModel,
@@ -38,6 +41,7 @@ export class DeviceModelController {
   @Put('/:deviceModelId')
   @ApiBody({ type: CreateDeviceModelDto })
   @HttpCode(200)
+  @Roles([ROLE.ADMIN])
   async update(
     @Param('deviceModelId') deviceModelId: string,
     @Body() body: CreateDeviceModelDto,
@@ -68,6 +72,7 @@ export class DeviceModelController {
   }
 
   @Delete('/:deviceModelId')
+  @Roles([ROLE.ADMIN])
   async delete(@Param('deviceModelId') deviceModelId: string) {
     return await this.deviceModelService.deleteDeviceModel(
       new ObjectId(deviceModelId),

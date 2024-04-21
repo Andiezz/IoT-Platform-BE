@@ -8,10 +8,13 @@ import {
   Get,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { ObjectId } from 'mongodb';
+import { Roles } from 'src/decorators/roles.decorator';
 import { User } from 'src/decorators/user.decorator';
+import { RolesGuard } from 'src/guards/roles.guard';
 import { ThingService } from 'src/modules/thing/thing.service';
 import { SaveThingDto } from 'src/shared/dto/request/thing/create.request';
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
@@ -19,11 +22,12 @@ import { ApiOkResponsePaginated } from 'src/shared/dto/response/pagination/base.
 import { SaveThingResponse } from 'src/shared/dto/response/thing/create.response';
 import { ThingResponse } from 'src/shared/dto/response/thing/detail.response';
 import { ThingInterceptor } from 'src/shared/interceptors/thing.interceptor';
-import { UserModel } from 'src/shared/models/user.model';
+import { ROLE, UserModel } from 'src/shared/models/user.model';
 import { ApiOkResponseBase } from 'src/shared/utils/swagger.utils';
 
 @ApiTags('thing')
 @Controller('thing')
+@UseGuards(RolesGuard)
 export class ThingController {
   constructor(private readonly thingService: ThingService) {}
 
@@ -33,6 +37,7 @@ export class ThingController {
   @ApiOkResponseBase(SaveThingResponse)
   @ApiBody({ type: SaveThingDto })
   @HttpCode(200)
+  @Roles([ROLE.ADMIN])
   async create(
     @Body() body: SaveThingDto,
     @User() user: UserModel,
@@ -45,6 +50,7 @@ export class ThingController {
   @ApiOkResponseBase(SaveThingResponse)
   @ApiBody({ type: SaveThingDto })
   @HttpCode(200)
+  @Roles([ROLE.ADMIN])
   async update(
     @Param('thingId') thingId: string,
     @Body() body: SaveThingDto,
@@ -57,6 +63,7 @@ export class ThingController {
   @ApiBearerAuth()
   @UseInterceptors(ThingInterceptor)
   @HttpCode(200)
+  @Roles([ROLE.ADMIN])
   async updateCertificate(
     @Param('thingId') thingId: string,
     @User() user: UserModel,

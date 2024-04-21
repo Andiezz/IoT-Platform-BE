@@ -27,7 +27,7 @@ export class CreateAccountDTO {
   @Transform(({ value }) => String(value))
   public phoneNumber: string;
 
-  @ApiProperty({ description: 'Role of account' })
+  @ApiProperty({ description: 'Role of account', enum: Object.values(ROLE) })
   @IsEnum(ROLE)
   @IsNotEmpty()
   public role: ROLE;
