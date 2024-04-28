@@ -9,6 +9,7 @@ import {
   Put,
   Query,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { ObjectId } from 'mongodb';
@@ -86,5 +87,14 @@ export class ThingController {
   @ApiOkResponsePaginated(ThingResponse)
   async list(@Query() query: ListThingDto, @User() user: UserModel) {
     return await this.thingService.list(query, user);
+  }
+
+  // controller to delete thing
+  @Delete('/:thingId')
+  @ApiBearerAuth()
+  @HttpCode(200)
+  @Roles([ROLE.ADMIN])
+  async delete(@Param('thingId') thingId: string, @User() user: UserModel) {
+    return await this.thingService.delete(new ObjectId(thingId), user);
   }
 }

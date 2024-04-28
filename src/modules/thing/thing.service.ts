@@ -703,6 +703,48 @@ export class ThingService {
     }
   }
 
+  public async delete(thingId: ObjectId, user: UserModel) {
+    const session = this.client.startSession();
+    try {
+      session.startTransaction();
+
+      // I. Validate data
+      const thing = await this.isExist({ _id: thingId }, session);
+      if (!checkValueExistInObjectArray(thing.managers, 'userId', user._id)) {
+        throw new BadRequestException('no-permission');
+      }
+
+      // II. Update thing
+      await this.thingCollection.updateOne(
+        {
+          _id: thingId,
+        },
+        {
+          $set: {
+            isDeleted: true,
+            updatedBy: user._id,
+            updatedOn: new Date(),
+          },
+        },
+        { session },
+      );
+
+      await session.commitTransaction();
+      // response
+      const response = new SaveThingResponse();
+      response.msg = 'thing-deleted-success';
+      response.id = thingId.toString();
+      return response;
+    } catch (error) {
+      this.logger.error(error);
+      session.inTransaction() && (await session.abortTransaction());
+      await session.endSession();
+      throw new BadRequestException(error.message);
+    } finally {
+      session.inTransaction() && (await session.endSession());
+    }
+  }
+
   public async updateStatusActive(thingId: ObjectId) {
     const session = this.client.startSession();
     try {
