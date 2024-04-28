@@ -222,7 +222,7 @@ export class ThingService {
       await this.isNameExist(name, { _id: { $ne: thingId } }, session);
       const isDeviceNameDuplicate = checkDuplicateInArray(devices, 'name');
       if (isDeviceNameDuplicate) {
-        throw new BadRequestException('device-name-must-unique');
+        throw new BadRequestException('device-name-exist');
       }
 
       // II. Update devices
@@ -693,7 +693,7 @@ export class ThingService {
         .toArray()) as ThingModel[];
 
       if (thing.length === 0) {
-        throw new NotFoundException('thing-not-exist');
+        throw new NotFoundException('thing-not-found');
       }
 
       return thing[0].devices;
@@ -860,7 +860,7 @@ export class ThingService {
     const nameIsExist = (await this.thingCollection.findOne(filterObject, {
       session,
     })) as ThingModel;
-    if (!nameIsExist) throw new NotFoundException('thing-not-existed');
+    if (!nameIsExist) throw new NotFoundException('thing-not-found');
 
     return nameIsExist;
   }
