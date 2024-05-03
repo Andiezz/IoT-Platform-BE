@@ -56,6 +56,15 @@ export class ParameterStandardController {
     );
   }
 
+  // api get detail parameter standard
+  @Get('/:parameterStandardId')
+  @ApiBearerAuth()
+  async detail(@Param('parameterStandardId') parameterStandardId: string) {
+    return await this.parameterStandardService.detail(
+      new ObjectId(parameterStandardId),
+    );
+  }
+
   @Get()
   @ApiBearerAuth()
   async list(@Query() query: ListParameterStandardDto) {

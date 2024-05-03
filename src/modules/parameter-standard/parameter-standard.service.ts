@@ -110,6 +110,23 @@ export class ParameterStandardService {
     }
   }
 
+  async detail(parameterStandardId: ObjectId) {
+    try {
+      const parameterStandard = await this.parameterStandardCollection.findOne({
+        _id: parameterStandardId,
+      });
+
+      if (!parameterStandard) {
+        throw new NotFoundException('parameter-standard-not-exist');
+      }
+
+      return parameterStandard;
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error.message);
+    }
+  }
+
   async list({
     q,
     skip,
