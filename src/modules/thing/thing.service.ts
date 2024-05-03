@@ -713,6 +713,9 @@ export class ThingService {
       if (!checkValueExistInObjectArray(thing.managers, 'userId', user._id)) {
         throw new BadRequestException('no-permission');
       }
+      if (thing.status !== DEVICE_STATUS.PENDING_SETUP) {
+        throw new BadRequestException('thing-not-allowed-delete');
+      }
 
       // II. Update thing
       await this.thingCollection.updateOne(
