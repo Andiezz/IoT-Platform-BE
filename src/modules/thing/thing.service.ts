@@ -35,10 +35,7 @@ import {
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { findRelative } from 'src/shared/utils/find-relative.utils';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
-import {
-  PARAMETER_NAME,
-  PARAMETER_THRESHOLD,
-} from './thing.constant';
+import { PARAMETER_NAME, PARAMETER_THRESHOLD } from './thing.constant';
 import { TYPE } from '../notification/template-notification';
 import {
   ParameterStandardModel,
@@ -46,6 +43,7 @@ import {
 } from 'src/shared/models/parameter-standard.model';
 import { DeviceModelService } from '../device-model/device-model.service';
 import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class ThingService {
@@ -58,6 +56,7 @@ export class ThingService {
     private readonly cfg: ConfigService,
     private readonly awsService: AwsService,
     private readonly deviceModelService: DeviceModelService,
+    private readonly userService: UserService,
   ) {}
 
   public async create(
@@ -127,12 +126,19 @@ export class ThingService {
       );
 
       // II.2 Assign managers
-      thingModel.managers = managers.map((manager) => {
-        const managerModel = new Manager();
-        managerModel.userId = new ObjectId(manager.userId);
-        managerModel.isOwner = manager.isOwner;
-        return managerModel;
-      });
+      thingModel.managers = await Promise.all(
+        managers.map(async (manager) => {
+          const managerModel = new Manager();
+          managerModel.userId = new ObjectId(manager.userId);
+          managerModel.isOwner = manager.isOwner;
+          const managerDetail = await this.userService.findUser(
+            { _id: manager.userId },
+            session,
+          );
+          managerModel.email = managerDetail.email;
+          return managerModel;
+        }),
+      );
 
       // II.3 Create AWS Thing
       const thing = await this.awsService.createThingWithCert({
@@ -259,12 +265,19 @@ export class ThingService {
       );
 
       // III. Update managers
-      const thingManagers = managers.map((manager) => {
-        const managerModel = new Manager();
-        managerModel.userId = new ObjectId(manager.userId);
-        managerModel.isOwner = manager.isOwner;
-        return managerModel;
-      });
+      const thingManagers = await Promise.all(
+        managers.map(async (manager) => {
+          const managerModel = new Manager();
+          managerModel.userId = new ObjectId(manager.userId);
+          managerModel.isOwner = manager.isOwner;
+          const managerDetail = await this.userService.findUser(
+            { _id: manager.userId },
+            session,
+          );
+          managerModel.email = managerDetail.email;
+          return managerModel;
+        }),
+      );
 
       await this.thingCollection.updateOne(
         {

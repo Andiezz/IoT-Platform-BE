@@ -36,6 +36,7 @@ export class Certificate {
 export class Manager {
   public userId: ObjectId;
   public isOwner: boolean;
+  public email: string;
 }
 
 export class ThingModel extends BaseModel {
