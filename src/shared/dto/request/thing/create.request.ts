@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsEmail,
   IsNotEmpty,
   IsNotEmptyObject,
   IsNumber,
@@ -10,6 +11,14 @@ import {
 import { ObjectId } from 'mongodb';
 import { DEVICE_STATUS } from 'src/shared/models/thing.model';
 import { CreateParameterStandardDto } from '../parameter-standard/create.request';
+
+export class ManagerThingDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsEmail()
+  @Transform(({ value }: { value: string }) => value.trim())
+  public email: string;
+}
 
 export class DeviceDto {
   @ApiProperty()

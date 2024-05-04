@@ -12,10 +12,12 @@ import { ConfigService } from '@nestjs/config';
 import { AwsService } from '../aws';
 import {
   DeviceDto,
+  ManagerThingDto,
   SaveThingDto,
 } from 'src/shared/dto/request/thing/create.request';
 import {
   CertificateFile,
+  ManagerThingResponse,
   SaveThingResponse,
 } from 'src/shared/dto/response/thing/create.response';
 import {
@@ -879,6 +881,26 @@ export class ThingService {
     if (!nameIsExist) throw new NotFoundException('thing-not-found');
 
     return nameIsExist;
+  }
+
+  public async manager({ email }: ManagerThingDto): Promise<ManagerThingResponse> {
+    const manager = await this.userService.findUser({
+      email,
+    });
+    if (!manager) throw new NotFoundException('manager-not-found');
+    if (!manager.isActive)
+      throw new BadRequestException('manager-not-active');
+
+    const response = new ManagerThingResponse();
+    response.msg = 'manager-found';
+    response.user = {
+      id: manager._id,
+      firstName: manager.firstName,
+      lastName: manager.lastName,
+      email: manager.email,
+      avatar: manager.avatar,
+    };
+    return response;
   }
 
   public validateThingData(data: ThingData, devices: Device[]) {

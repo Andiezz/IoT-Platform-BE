@@ -27,3 +27,12 @@ export class SaveThingResponse {
   @IsString()
   public id?: string
 }
+
+export class ManagerThingResponse {
+  @ApiProperty()
+  @IsString()
+  public msg: string
+
+  @ApiProperty()
+  public user?: {}
+}

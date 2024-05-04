@@ -46,7 +46,7 @@ export class DashboardService {
         throw new BadRequestException('bad-from-to-query');
       }
 
-      // I.2 Validate thing and thing owner
+      // I.2 Validate thing and thing manager
       const thing = await this.thingService.isExist({ _id: thingId });
       if (!checkValueExistInObjectArray(thing.managers, 'userId', user._id)) {
         throw new BadRequestException('no-permission');

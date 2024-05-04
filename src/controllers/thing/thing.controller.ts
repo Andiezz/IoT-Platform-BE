@@ -17,10 +17,16 @@ import { Roles } from 'src/decorators/roles.decorator';
 import { User } from 'src/decorators/user.decorator';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { ThingService } from 'src/modules/thing/thing.service';
-import { SaveThingDto } from 'src/shared/dto/request/thing/create.request';
+import {
+  ManagerThingDto,
+  SaveThingDto,
+} from 'src/shared/dto/request/thing/create.request';
 import { ListThingDto } from 'src/shared/dto/request/thing/list.request';
 import { ApiOkResponsePaginated } from 'src/shared/dto/response/pagination/base.decorator';
-import { SaveThingResponse } from 'src/shared/dto/response/thing/create.response';
+import {
+  ManagerThingResponse,
+  SaveThingResponse,
+} from 'src/shared/dto/response/thing/create.response';
 import { ThingResponse } from 'src/shared/dto/response/thing/detail.response';
 import { ThingInterceptor } from 'src/shared/interceptors/thing.interceptor';
 import { ROLE, UserModel } from 'src/shared/models/user.model';
@@ -87,6 +93,15 @@ export class ThingController {
   @ApiOkResponsePaginated(ThingResponse)
   async list(@Query() query: ListThingDto, @User() user: UserModel) {
     return await this.thingService.list(query, user);
+  }
+
+  @Post('manager')
+  @ApiBearerAuth()
+  @ApiOkResponseBase(ManagerThingResponse)
+  @ApiBody({ type: ManagerThingDto })
+  @HttpCode(200)
+  async owner(@Body() body: ManagerThingDto): Promise<ManagerThingResponse> {
+    return await this.thingService.manager(body);
   }
 
   // controller to delete thing
