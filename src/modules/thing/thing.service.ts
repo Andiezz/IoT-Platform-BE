@@ -421,7 +421,33 @@ export class ThingService {
                   },
                 },
               ],
-              as: 'managers.user',
+              as: 'managers2',
+            },
+          },
+          {
+            $addFields: {
+              managers: {
+                $map: {
+                  input: '$managers',
+                  as: 'manager',
+                  in: {
+                    $mergeObjects: [
+                      '$$manager',
+                      {
+                        $arrayElemAt: [
+                          '$managers2',
+                          {
+                            $indexOfArray: [
+                              '$managers2._id',
+                              '$$manager.userId',
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
             },
           },
           {
@@ -468,6 +494,15 @@ export class ThingService {
           {
             $group: {
               _id: '$_id',
+              name: { $first: '$name' },
+              information: { $first: '$information' },
+              location: { $first: '$location' },
+              status: { $first: '$status' },
+              managers: { $first: '$managers' },
+              createdBy: { $first: '$createdBy' },
+              updatedBy: { $first: '$updatedBy' },
+              createdOn: { $first: '$createdOn' },
+              updatedOn: { $first: '$updatedOn' },
               devices: {
                 $push: '$devices',
               },
@@ -532,7 +567,33 @@ export class ThingService {
                   },
                 },
               ],
-              as: 'managers.user',
+              as: 'managers2',
+            },
+          },
+          {
+            $addFields: {
+              managers: {
+                $map: {
+                  input: '$managers',
+                  as: 'manager',
+                  in: {
+                    $mergeObjects: [
+                      '$$manager',
+                      {
+                        $arrayElemAt: [
+                          '$managers2',
+                          {
+                            $indexOfArray: [
+                              '$managers2._id',
+                              '$$manager.userId',
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                },
+              },
             },
           },
           {
@@ -579,6 +640,16 @@ export class ThingService {
           {
             $group: {
               _id: '$_id',
+              name: { $first: '$name' },
+              information: { $first: '$information' },
+              location: { $first: '$location' },
+              status: { $first: '$status' },
+              managers: { $first: '$managers' },
+              managers2: { $first: '$managers2' },
+              createdBy: { $first: '$createdBy' },
+              updatedBy: { $first: '$updatedBy' },
+              createdOn: { $first: '$createdOn' },
+              updatedOn: { $first: '$updatedOn' },
               devices: {
                 $push: '$devices',
               },
@@ -883,13 +954,14 @@ export class ThingService {
     return nameIsExist;
   }
 
-  public async manager({ email }: ManagerThingDto): Promise<ManagerThingResponse> {
+  public async manager({
+    email,
+  }: ManagerThingDto): Promise<ManagerThingResponse> {
     const manager = await this.userService.findUser({
       email,
     });
     if (!manager) throw new NotFoundException('manager-not-found');
-    if (!manager.isActive)
-      throw new BadRequestException('manager-not-active');
+    if (!manager.isActive) throw new BadRequestException('manager-not-active');
 
     const response = new ManagerThingResponse();
     response.msg = 'manager-found';
