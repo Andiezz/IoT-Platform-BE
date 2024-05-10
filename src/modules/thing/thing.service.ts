@@ -273,7 +273,7 @@ export class ThingService {
           managerModel.userId = new ObjectId(manager.userId);
           managerModel.isOwner = manager.isOwner;
           const managerDetail = await this.userService.findUser(
-            { _id: manager.userId },
+            { _id: new ObjectId(manager.userId) },
             session,
           );
           managerModel.email = managerDetail.email;
