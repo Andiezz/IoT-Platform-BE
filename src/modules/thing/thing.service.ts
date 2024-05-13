@@ -470,7 +470,6 @@ export class ThingService {
                 {
                   $project: {
                     ...EXCULDE_BASE_MODEL,
-                    _id: 0,
                   },
                 },
                 {
