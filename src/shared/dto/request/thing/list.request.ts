@@ -15,4 +15,8 @@ export class ListThingDto extends PaginationDto {
   @IsOptional()
   @IsEnum(DEVICE_STATUS)
   status: DEVICE_STATUS;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  public userId?: string = '';
 }

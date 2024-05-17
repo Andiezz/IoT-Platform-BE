@@ -81,8 +81,8 @@ export class GetDashboardResponse {
   @ApiProperty({ type: [TimeseriesData] })
   timeseriesData: TimeseriesData[];
 
-  @ApiProperty({ type: NotificationModel })
-  thingWarning: NotificationModel;
+  @ApiProperty({ type: [NotificationModel] })
+  thingWarning: NotificationModel[];
 
   @ApiProperty({ type: ThingResponse })
   thingDetail: ThingResponse;

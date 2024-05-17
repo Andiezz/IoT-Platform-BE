@@ -525,7 +525,7 @@ export class ThingService {
   }
 
   public async list(
-    { skip, page, limit, q, sortBy, sortOrder, status }: ListThingDto,
+    { skip, page, limit, q, sortBy, sortOrder, status, userId }: ListThingDto,
     user: UserModel,
   ) {
     try {
@@ -549,6 +549,7 @@ export class ThingService {
         });
 
       if (status) match['status'] = status;
+      if (userId) match['managers._id'] = new ObjectId(userId);
 
       !match['$and'].length && delete match['$and'];
 
@@ -644,7 +645,6 @@ export class ThingService {
               location: { $first: '$location' },
               status: { $first: '$status' },
               managers: { $first: '$managers' },
-              managers2: { $first: '$managers2' },
               createdBy: { $first: '$createdBy' },
               updatedBy: { $first: '$updatedBy' },
               createdOn: { $first: '$createdOn' },

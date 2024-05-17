@@ -21,6 +21,7 @@ import {
 } from '../parameter-standard/parameter-standard.constants';
 import { TYPE } from '../notification/template-notification';
 import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
+import * as  moment from 'moment';
 
 @Injectable()
 export class DashboardService {
@@ -192,6 +193,58 @@ export class DashboardService {
     }
   }
 
+  public async getDailyTimeseriesData(thingId: ObjectId) {
+    try {
+      const db = this.client.db(this.cfg.getOrThrow('database').dbName);
+
+      // generate query parameters
+      const match = {};
+      match['metadata.thingId'] = thingId.toString();
+      match['timestamp'] = {
+        $gte: moment().startOf('day').toDate(),
+        $lte: moment().endOf('day').toDate(),
+      };
+
+      const groupPipeline = [
+        {
+          $group: {
+            _id: {
+              thingId: '$metadata.thingId',
+            },
+            co: { $avg: '$co' },
+            toluen: { $avg: '$toluen' },
+            alcohol: { $avg: '$alcohol' },
+            ch4: { $avg: '$ch4' },
+            aceton: { $avg: '$aceton' },
+            dustDensity: { $avg: '$dustDensity' },
+            co2: { $avg: '$co2' },
+            humidity: { $avg: '$humidity' },
+            lpg: { $avg: '$lpg' },
+            temperature: { $avg: '$temperature' },
+            nh4: { $avg: '$nh4' },
+            tvoc: { $avg: '$tvoc' },
+            count: { $sum: 1 },
+          },
+        },
+      ];
+
+      const dailyTimeseriesData = (await db
+        .collection(`${thingId.toString()}_timeseries_data`)
+        .aggregate([
+          {
+            $match: match,
+          },
+          ...groupPipeline,
+        ])
+        .toArray()) as TimeseriesData[];
+
+      return dailyTimeseriesData;
+    } catch (error) {
+      this.logger.error(error);
+      throw new BadRequestException(error.message);
+    }
+  }
+
   public async getQualityReport(
     thingId: ObjectId,
     getDashboardDto: GetDashboardDto,
@@ -319,7 +372,10 @@ export class DashboardService {
       ...acceptableSubstances,
       ...unAcceptableSubstances,
     ]);
-    const generalIaqiReport = getParameterThreshold(generalIaqi);
+    const generalIaqiReport = {
+      ...getParameterThreshold(generalIaqi),
+      generalIaqi
+    };
 
     return {
       generalIaqiReport,
