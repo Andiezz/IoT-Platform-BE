@@ -15,6 +15,7 @@ import { UserModel } from 'src/shared/models/user.model';
 import { ThingData } from '../iot-consumer/iot-consumer.interface';
 import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
 import { SocketGateway } from '../socket/socket.gateway';
+import { UpdateNotificationDto } from 'src/shared/dto/request/notification/update.request';
 
 @Injectable()
 export class NotificationService {
@@ -65,7 +66,7 @@ export class NotificationService {
 
       // publish notification socket
       await this.socketGateway.publish(`/thing-warning/${thingId.toString()}`, {
-        channel: 'thing-warning-process',
+        channel: 'in-app-notification',
         data: warningThresholdNotification,
       });
 
@@ -112,14 +113,23 @@ export class NotificationService {
     }
   }
 
-  async updateAll(user: UserModel) {
+  async updateMany(
+    updateNotificationDto: UpdateNotificationDto,
+    user: UserModel,
+  ) {
+    const { isUpdateAll, notificationIds } = updateNotificationDto;
     const session = this.client.startSession();
     try {
       session.startTransaction();
+
+      let queryFilter = isUpdateAll
+        ? { 'receivers.userId': user._id }
+        : {
+            _id: { $in: notificationIds },
+            'receivers.userId': user._id,
+          };
       await this.notificationCollection.updateMany(
-        {
-          'receivers.userId': user._id,
-        },
+        queryFilter,
         {
           $set: {
             'receivers.$.readAt': new Date(),
@@ -130,7 +140,7 @@ export class NotificationService {
 
       await session.commitTransaction();
 
-      return 'update-all-notification-success';
+      return 'update-notifications-success';
     } catch (error) {
       this.logger.error(error);
       session.inTransaction() && (await session.abortTransaction());
@@ -216,7 +226,6 @@ export class NotificationService {
   }
 
   generateContent(content: string, ...args: string[]) {
-    console.log(args);
     args.forEach((arg, index) => {
       content = content.replace(`$${index + 1}`, arg);
     });

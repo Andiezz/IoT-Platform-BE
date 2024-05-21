@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 
 export class UpdateNotificationDto {
   @ApiProperty()
-  public all: boolean;
+  public isUpdateAll: boolean;
 
   @ApiProperty()
   @Transform(({ value }) => value?.map((v: string) => new ObjectId(v)))

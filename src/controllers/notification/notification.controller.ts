@@ -6,6 +6,7 @@ import {
   Put,
   Query,
   HttpCode,
+  Body,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { User } from 'src/decorators/user.decorator';
@@ -14,6 +15,7 @@ import { ListNotificationDto } from 'src/shared/dto/request/notification/list.re
 import { NotificationService } from 'src/modules/notification/notification.service';
 import { NormalizeListNotificationPipe } from 'src/shared/dto/request/notification/normalize-list.pipe';
 import { ObjectId } from 'mongodb';
+import { UpdateNotificationDto } from 'src/shared/dto/request/notification/update.request';
 
 @ApiTags('notification')
 @Controller('notification')
@@ -52,9 +54,16 @@ export class NotificationController {
   }
 
   @Put('update')
-  async updateAll(@User() user: UserModel) {
+  @ApiBearerAuth()
+  async updateAll(
+    @Body() updateNotificationDto: UpdateNotificationDto,
+    @User() user: UserModel,
+  ) {
     try {
-      return await this.notificationService.updateAll(user);
+      return await this.notificationService.updateMany(
+        updateNotificationDto,
+        user,
+      );
     } catch (e) {
       throw new BadRequestException(e.message);
     }

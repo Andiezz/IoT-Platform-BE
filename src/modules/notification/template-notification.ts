@@ -23,7 +23,10 @@ export const formatTemplateContentArgument = (
   let argument = '';
   parameters.forEach((parameter) => {
     const iaqiValue = convertParameterValueToIAQI(parameter);
-    const parameterContent = `${parameter.name} - ${parameter.threshold.name}: ${iaqiValue}\n`;
+    const parameterContent = `\n${parameter.name} - ${
+      parameter.threshold.name.charAt(0).toUpperCase() +
+      parameter.threshold.name.slice(1)
+    }: ${iaqiValue}\n`;
     argument += parameterContent;
   });
   return argument;
