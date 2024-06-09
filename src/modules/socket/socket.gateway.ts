@@ -12,7 +12,7 @@ import { JwtService } from '../jwt/jwt.service';
   cors: {
     origin: '*',
   },
-  transports: ['websocket'],
+  transports: ['websocket', 'polling'],
 })
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -23,7 +23,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket) {
     try {
-      const header = client.handshake.headers.authorization;
+      const header =
+        client.handshake.auth.Authorization ??
+        client.handshake.headers.Authorization;
       if (!header) {
         client.disconnect(true);
         return;

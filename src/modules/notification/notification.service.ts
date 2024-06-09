@@ -65,10 +65,17 @@ export class NotificationService {
       );
 
       // publish notification socket
-      await this.socketGateway.publish(`/thing-warning/${thingId.toString()}`, {
-        channel: 'in-app-notification',
-        data: warningThresholdNotification,
-      });
+      await Promise.all(
+        receivers.map(async (receiver) => {
+          await this.socketGateway.publish(
+            `/notification/${receiver.toString()}`,
+            {
+              channel: 'in-app-notification',
+              data: warningThresholdNotification,
+            },
+          );
+        }),
+      );
 
       await session.commitTransaction();
 
