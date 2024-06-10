@@ -33,6 +33,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const token = header.split(' ')[1];
       const verifyToken = await this.jwtService.verifyToken(token);
       if (!verifyToken) {
+        this.logger.log('Disconnected: ' + client.id, 'SocketConnection');
         client.disconnect(true);
       }
       this.logger.log('Connected: ' + client.id, 'SocketConnection');
@@ -43,7 +44,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   async handleDisconnect(client: Socket) {
-    this.logger.log('Disconnected: ', client.id);
+    this.logger.log('Disconnected: ', client.id, 'SocketConnection');
   }
 
   async publish(topic: string, message: any) {

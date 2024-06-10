@@ -8,8 +8,10 @@ export const TITLE = {
 // $1: thingId
 // $2: Parameter - 'Threshold name': IAQI\n -> Ex: PM2.5 - Good: 30
 export const CONTENT = {
-  WARNING_THRESHOLD: `Thing $1 has the following parameters being in warning threshold:
-    $2.`,
+  WARNING_THRESHOLD: `<p>Thing <strong>$1</strong> has the following parameters being in warning threshold:</p>
+    <ul>
+      $2
+    </ul>`,
 };
 
 export const TYPE = {
@@ -22,12 +24,16 @@ export const formatTemplateContentArgument = (
 ) => {
   let argument = '';
   parameters.forEach((parameter) => {
-    const iaqiValue = convertParameterValueToIAQI(parameter);
-    const parameterContent = `\n${parameter.name} - ${
-      parameter.threshold.name.charAt(0).toUpperCase() +
-      parameter.threshold.name.slice(1)
-    }: ${iaqiValue}\n`;
-    argument += parameterContent;
+    argument += formatParameterContent(parameter);
   });
   return argument;
+};
+
+export const formatParameterContent = (parameter: EvaluatedParameter) => {
+  const parameterName = parameter.name;
+  const parameterThreshold =
+    parameter.threshold.name.charAt(0).toUpperCase() +
+    parameter.threshold.name.slice(1);
+  const iaqiValue = convertParameterValueToIAQI(parameter);
+  return `<li><strong>${parameterName}</strong> - ${parameterThreshold}: ${iaqiValue}</li>`;
 };
