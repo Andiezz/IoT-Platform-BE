@@ -995,7 +995,7 @@ export class ThingService {
         if (parameter.name === PARAMETER_NAME.TVOC) {
           tVOCParameter = parameter;
         }
-        const value = data[`${parameter.name.toLowerCase()}`];
+        const value = data[`${parameter.name.toLowerCase().replace('.', '')}`];
         if (!value) {
           return;
         }

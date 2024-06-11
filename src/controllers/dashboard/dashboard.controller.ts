@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DashboardService } from 'src/modules/dashboard/dashboard.service';
 import { User } from 'src/decorators/user.decorator';
@@ -33,7 +33,13 @@ export class DashboardController {
 
   @Get('daily/:thingId')
   @ApiOkResponseBase(TimeseriesData)
-  public async getDailyTimeseriesData(@Param('thingId') thingId: string) {
-    return await this.service.getDailyTimeseriesData(new ObjectId(thingId));
+  public async getDailyTimeseriesData(
+    @Param('thingId') thingId: string,
+    @Body('timezone') timezone: string = 'Asia/HoChiMinh',
+  ) {
+    return await this.service.getDailyTimeseriesData(
+      new ObjectId(thingId),
+      timezone,
+    );
   }
 }

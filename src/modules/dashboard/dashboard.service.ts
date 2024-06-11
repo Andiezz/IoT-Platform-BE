@@ -21,7 +21,7 @@ import {
 } from '../parameter-standard/parameter-standard.constants';
 import { TYPE } from '../notification/template-notification';
 import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
-import * as  moment from 'moment';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class DashboardService {
@@ -153,6 +153,8 @@ export class DashboardService {
             temperature: { $avg: '$temperature' },
             nh4: { $avg: '$nh4' },
             tvoc: { $avg: '$tvoc' },
+            pm25: { $avg: { $getField: 'pm2.5' } },
+            pm10: { $avg: '$pm10' },
             count: { $sum: 1 },
           },
         },
@@ -193,7 +195,10 @@ export class DashboardService {
     }
   }
 
-  public async getDailyTimeseriesData(thingId: ObjectId) {
+  public async getDailyTimeseriesData(
+    thingId: ObjectId,
+    timezone: string = 'Asia/Ho_Chi_Minh',
+  ) {
     try {
       const db = this.client.db(this.cfg.getOrThrow('database').dbName);
 
@@ -201,8 +206,8 @@ export class DashboardService {
       const match = {};
       match['metadata.thingId'] = thingId.toString();
       match['timestamp'] = {
-        $gte: moment().startOf('day').toDate(),
-        $lte: moment().endOf('day').toDate(),
+        $gte: moment.tz(timezone).startOf('day').toDate(),
+        $lte: moment.tz(timezone).endOf('day').toDate(),
       };
 
       const groupPipeline = [
@@ -223,6 +228,8 @@ export class DashboardService {
             temperature: { $avg: '$temperature' },
             nh4: { $avg: '$nh4' },
             tvoc: { $avg: '$tvoc' },
+            pm25: { $avg: { $getField: 'pm2.5' } },
+            pm10: { $avg: '$pm10' },
             count: { $sum: 1 },
           },
         },
@@ -279,6 +286,8 @@ export class DashboardService {
             temperature: { $avg: '$temperature' },
             nh4: { $avg: '$nh4' },
             tvoc: { $avg: '$tvoc' },
+            pm25: { $avg: { $getField: 'pm2.5' } },
+            pm10: { $avg: '$pm10' },
             count: { $sum: 1 },
           },
         },
@@ -374,7 +383,7 @@ export class DashboardService {
     ]);
     const generalIaqiReport = {
       ...getParameterThreshold(generalIaqi),
-      generalIaqi
+      generalIaqi,
     };
 
     return {

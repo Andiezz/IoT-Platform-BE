@@ -16,6 +16,8 @@ import { ThingData } from '../iot-consumer/iot-consumer.interface';
 import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
 import { SocketGateway } from '../socket/socket.gateway';
 import { UpdateNotificationDto } from 'src/shared/dto/request/notification/update.request';
+import { title } from 'process';
+import { count } from 'console';
 
 @Injectable()
 export class NotificationService {
@@ -210,6 +212,22 @@ export class NotificationService {
           $match: {
             content: { $regex: thingId.toString() },
           },
+        },
+        {
+          $group: {
+            _id: {
+              title: '$title',
+            },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $set: {
+            title: '$_id.title',
+          },
+        },
+        {
+          $unset: '_id',
         },
       ])
       .toArray();
