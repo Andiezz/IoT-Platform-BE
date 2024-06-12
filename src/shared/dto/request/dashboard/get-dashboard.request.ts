@@ -1,8 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
-import { ObjectId } from 'mongodb';
-import * as moment from 'moment';
+import * as moment from 'moment-timezone';
 import { BadRequestException } from '@nestjs/common';
 import { CHART_TYPE } from 'src/shared/constants/dashboard.constants';
 
