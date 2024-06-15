@@ -29,14 +29,3 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-  deploy:
-    needs: build
-    runs-on: [ip-172-26-6-109]
-    steps:
-      - name: Pull image from docker hub
-        run: docker pull 697440278305.dkr.ecr.ap-southeast-1.amazonaws.com/iot-platform-be:latest
-      - name: Delete old container
-        run: docker rm -f nodejs-app-container
-      - name: Run docker container
-        run: docker run -d -p 8888:8888 --name nodejs-app-container integrationninjas/nodejs-app
