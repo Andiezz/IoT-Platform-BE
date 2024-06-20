@@ -1,0 +1,47 @@
+config:
+  # This is a test server run by team Artillery
+  # It's designed to be highly scalable
+  target: 
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      maxVusers: 50
+      name: Warm up phase
+  plugins:
+    ensure: {}
+    apdex: {}
+    metrics-by-endpoint: {}
+  apdex:
+    threshold: 5000
+  ensure:
+    thresholds:
+      - http.response_time.p99: 5000
+      - http.response_time.p95: 2500
+before:
+  flow:
+    - log: 'Get auth token'
+    - post:
+        url: '/auth/login'
+        json:
+          email: ""
+          password: ""
+        capture:
+          - json: $.data.token
+            as: token
+scenarios:
+  - flow:
+    - get:
+        url: '/dashboard/thing/660cdfccc1f7207a61f86103'
+        headers:
+          authorization: 'Bearer {{ token }}'
+    - get:
+        url: '/dashboard/daily/660cdfccc1f7207a61f86103'
+        headers:
+            authorization: 'Bearer {{ token }}'
+after:
+  flow:
+    - log: 'Invalidate token'
+    - post:
+        url: '/auth/logout'
+        json:
+          token: '{{ token }}'
