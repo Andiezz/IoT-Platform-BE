@@ -69,7 +69,7 @@ export class DashboardService {
       });
 
       // II.3 Get thing warning
-      const getThingWarningPromise = this.getThingWarning(thingId);
+      const getThingWarningPromise = this.getThingWarning(thingId, getDashboardDto);
 
       const [timeseriesData, thingDetail, thingWarning] = await Promise.all([
         getTimeseriesDataPromise,
@@ -315,9 +315,10 @@ export class DashboardService {
     }
   }
 
-  public async getThingWarning(thingId: ObjectId) {
+  public async getThingWarning(thingId: ObjectId, getDashboardDto: GetDashboardDto) {
     try {
-      const warnings = await this.notificationService.getThingWarnings(thingId);
+      const { from, to, timezone } = getDashboardDto;
+      const warnings = await this.notificationService.getThingWarnings(thingId, timezone, from, to);
       return warnings;
     } catch (error) {
       this.logger.error(error);

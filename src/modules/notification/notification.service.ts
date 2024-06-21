@@ -16,8 +16,7 @@ import { ThingData } from '../iot-consumer/iot-consumer.interface';
 import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.request';
 import { SocketGateway } from '../socket/socket.gateway';
 import { UpdateNotificationDto } from 'src/shared/dto/request/notification/update.request';
-import { title } from 'process';
-import { count } from 'console';
+import * as moment from 'moment-timezone';
 
 @Injectable()
 export class NotificationService {
@@ -205,12 +204,16 @@ export class NotificationService {
     return response;
   }
 
-  async getThingWarnings(thingId: ObjectId) {
+  async getThingWarnings(thingId: ObjectId, timezone: string, from?: Date, to?: Date) {
     const notifications = await this.notificationCollection
       .aggregate([
         {
           $match: {
             content: { $regex: thingId.toString() },
+            createdOn: {
+              $gte: from || moment.tz(timezone).startOf('day').toDate(),
+              $lte: to || moment.tz(timezone).endOf('day').toDate(),
+            },
           },
         },
         {
