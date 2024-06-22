@@ -66,23 +66,29 @@ export class DashboardService {
         updatedBy: 0,
         createdOn: 0,
         updatedOn: 0,
+        managers: 0,
+        'devices.status': 0,
+        'devices.model': 0,
+        'devices.parameterStandardDefault': 0,
+        'devices.parameterStandards': 0
       });
 
       // II.3 Get thing warning
-      const getThingWarningPromise = this.getThingWarning(thingId, getDashboardDto);
-
-      const [timeseriesData, thingDetail, thingWarning] = await Promise.all([
-        getTimeseriesDataPromise,
-        getThingDetailPromise,
-        getThingWarningPromise,
-      ]);
-
-      // II.4 Get thing quality report
-      const qualityReport = await this.getQualityReport(
+      const getThingWarningPromise = this.getThingWarning(
         thingId,
         getDashboardDto,
-        thingDetail,
       );
+
+      // II.4 Get thing quality report
+      const geQualityReport = this.getQualityReport(thingId, getDashboardDto);
+
+      const [timeseriesData, thingDetail, thingWarning, qualityReport] =
+        await Promise.all([
+          getTimeseriesDataPromise,
+          getThingDetailPromise,
+          getThingWarningPromise,
+          geQualityReport,
+        ]);
 
       return {
         timeseriesData,
@@ -142,16 +148,10 @@ export class DashboardService {
               },
             },
             co: { $avg: '$co' },
-            toluen: { $avg: '$toluen' },
-            alcohol: { $avg: '$alcohol' },
-            ch4: { $avg: '$ch4' },
-            aceton: { $avg: '$aceton' },
-            dustDensity: { $avg: '$dustDensity' },
             co2: { $avg: '$co2' },
             humidity: { $avg: '$humidity' },
             lpg: { $avg: '$lpg' },
             temperature: { $avg: '$temperature' },
-            nh4: { $avg: '$nh4' },
             tvoc: { $avg: '$tvoc' },
             pm25: { $avg: { $getField: 'pm2.5' } },
             pm10: { $avg: '$pm10' },
@@ -217,16 +217,10 @@ export class DashboardService {
               thingId: '$metadata.thingId',
             },
             co: { $avg: '$co' },
-            toluen: { $avg: '$toluen' },
-            alcohol: { $avg: '$alcohol' },
-            ch4: { $avg: '$ch4' },
-            aceton: { $avg: '$aceton' },
-            dustDensity: { $avg: '$dustDensity' },
             co2: { $avg: '$co2' },
             humidity: { $avg: '$humidity' },
             lpg: { $avg: '$lpg' },
             temperature: { $avg: '$temperature' },
-            nh4: { $avg: '$nh4' },
             tvoc: { $avg: '$tvoc' },
             pm25: { $avg: { $getField: 'pm2.5' } },
             pm10: { $avg: '$pm10' },
@@ -255,7 +249,6 @@ export class DashboardService {
   public async getQualityReport(
     thingId: ObjectId,
     getDashboardDto: GetDashboardDto,
-    thing: ThingModel,
   ) {
     try {
       const db = this.client.db(this.cfg.getOrThrow('database').dbName);
@@ -275,16 +268,10 @@ export class DashboardService {
           $group: {
             _id: null,
             co: { $avg: '$co' },
-            toluen: { $avg: '$toluen' },
-            alcohol: { $avg: '$alcohol' },
-            ch4: { $avg: '$ch4' },
-            aceton: { $avg: '$aceton' },
-            dustDensity: { $avg: '$dustDensity' },
             co2: { $avg: '$co2' },
             humidity: { $avg: '$humidity' },
             lpg: { $avg: '$lpg' },
             temperature: { $avg: '$temperature' },
-            nh4: { $avg: '$nh4' },
             tvoc: { $avg: '$tvoc' },
             pm25: { $avg: { $getField: 'pm2.5' } },
             pm10: { $avg: '$pm10' },
@@ -303,7 +290,7 @@ export class DashboardService {
         ])
         .toArray()) as TimeseriesData[];
 
-      const iaqResult = await this.calculateReport(timeseriesData[0], thing);
+      const iaqResult = await this.calculateReport(timeseriesData[0], thingId);
 
       return {
         iaqResult,
@@ -315,10 +302,18 @@ export class DashboardService {
     }
   }
 
-  public async getThingWarning(thingId: ObjectId, getDashboardDto: GetDashboardDto) {
+  public async getThingWarning(
+    thingId: ObjectId,
+    getDashboardDto: GetDashboardDto,
+  ) {
     try {
       const { from, to, timezone } = getDashboardDto;
-      const warnings = await this.notificationService.getThingWarnings(thingId, timezone, from, to);
+      const warnings = await this.notificationService.getThingWarnings(
+        thingId,
+        timezone,
+        from,
+        to,
+      );
       return warnings;
     } catch (error) {
       this.logger.error(error);
@@ -346,16 +341,16 @@ export class DashboardService {
 
   public async calculateReport(
     timeseriesData: TimeseriesData,
-    thing: ThingModel,
+    thingId: ObjectId,
   ) {
     const thingData: ThingData = {
       ...timeseriesData,
       metadata: {
-        thingId: thing._id.toString(),
+        thingId: thingId.toString(),
       },
     };
     const evaluatedParameters =
-      await this.notificationService.classifyTypeAndTitle(thing._id, thingData);
+      await this.notificationService.classifyTypeAndTitle(thingId, thingData);
 
     // evaluate quality
     const acceptableSubstances: EvaluatedParameter[] = [];
