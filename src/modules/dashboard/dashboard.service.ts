@@ -197,7 +197,7 @@ export class DashboardService {
 
   public async getDailyTimeseriesData(
     thingId: ObjectId,
-    timezone: string = 'Asia/Ho_Chi_Minh',
+    timezone: string = 'Asia/Saigon',
   ) {
     try {
       const db = this.client.db(this.cfg.getOrThrow('database').dbName);
@@ -205,9 +205,11 @@ export class DashboardService {
       // generate query parameters
       const match = {};
       match['metadata.thingId'] = thingId.toString();
+      const startDate = moment.tz(timezone).startOf('day').toDate();
+      const endDate = moment.tz(timezone).endOf('day').toDate();
       match['timestamp'] = {
-        $gte: moment.tz(timezone).startOf('day').toDate(),
-        $lte: moment.tz(timezone).endOf('day').toDate(),
+        $gte: startDate,
+        $lte: endDate,
       };
 
       const groupPipeline = [
