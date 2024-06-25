@@ -11,10 +11,6 @@ import { Threshold } from 'src/shared/models/parameter-standard.model';
 */
 export const convertParameterValueToIAQI = (parameter: EvaluatedParameter) => {
   // skip value that can not be converted to IAQI
-  if (parameter.weight === 0) {
-    return parameter.value;
-  }
-
   let threshold: Threshold;
   for (let t in PARAMETER_THRESHOLD) {
     const tLower = t.toLowerCase().replace('_', '-');
@@ -30,9 +26,10 @@ export const convertParameterValueToIAQI = (parameter: EvaluatedParameter) => {
   const b = threshold.max;
 
   const v = parameter.value;
+  console.log(parameter)
 
   const percentageOfRange2 = (((v - x) / (y - x)) * 100) / 100;
-  const valueInRange1 = (percentageOfRange2 / 100) * (b - a);
+  const valueInRange1 = (percentageOfRange2) * (b - a);
   const iaqi = a + valueInRange1;
   return iaqi;
 };

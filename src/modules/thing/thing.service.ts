@@ -979,8 +979,6 @@ export class ThingService {
       return;
     }
 
-    let tVOC = 0;
-    let tVOCParameter: ParameterStandardModel;
     const evaluatedDeviceData = devices.map((device) => {
       const evaluatedDevice = new DeviceWithEvaluatedParameters();
       evaluatedDevice.name = device.name;
@@ -992,24 +990,9 @@ export class ThingService {
       evaluatedDevice.evaluatedParameterStandards = [];
 
       device.parameterStandards.forEach((parameter) => {
-        if (parameter.name === PARAMETER_NAME.TVOC) {
-          tVOCParameter = parameter;
-        }
         const value = data[`${parameter.name.toLowerCase().replace('.', '')}`];
         if (!value) {
           return;
-        }
-
-        // tvoc accumulation for evaluate tvoc result
-        if (
-          [
-            PARAMETER_NAME.Aceton.toString(),
-            PARAMETER_NAME.Alcohol.toString(),
-            PARAMETER_NAME.LPG.toString(),
-            PARAMETER_NAME.Toluen.toString(),
-          ].includes(parameter.name)
-        ) {
-          tVOC += value;
         }
 
         // skip if value is fine
@@ -1047,37 +1030,12 @@ export class ThingService {
       return evaluatedDevice;
     });
 
-    // evaluate tVOC parameter
-    if (tVOCParameter && !data?.tvoc) {
-      const threshold = this.getThingValueThreshold(tVOC, tVOCParameter);
-      const evaluatedParameter = new EvaluatedParameter();
-      if (
-        [
-          PARAMETER_THRESHOLD.GOOD.name,
-          PARAMETER_THRESHOLD.MODERATE.name,
-          PARAMETER_THRESHOLD.SENSITIVE_UNHEALTHY.name,
-        ].includes(threshold.name)
-      ) {
-        evaluatedParameter.type = TYPE.NORMAL;
-      } else {
-        evaluatedParameter.type = TYPE.WARNING;
-      }
-      evaluatedParameter.name = tVOCParameter.name;
-      evaluatedParameter.unit = tVOCParameter.unit;
-      evaluatedParameter.weight = tVOCParameter.weight;
-      evaluatedParameter.value = tVOC;
-      evaluatedParameter.threshold = threshold;
-      evaluatedDeviceData[0].evaluatedParameterStandards.push(
-        evaluatedParameter,
-      );
-    }
-
     return evaluatedDeviceData;
   }
 
   // get the threshold the value is in
   getThingValueThreshold(value: number, parameter: ParameterStandardModel) {
-    let evaluatedValueThreshold: Threshold = PARAMETER_THRESHOLD.HAZARDOUS;
+    let evaluatedValueThreshold = parameter.thresholds[parameter.thresholds.length - 1];
     parameter.thresholds.forEach((threshold) => {
       if (value >= threshold.min && value < threshold.max) {
         evaluatedValueThreshold = threshold;
