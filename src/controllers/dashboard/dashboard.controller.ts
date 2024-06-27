@@ -35,7 +35,7 @@ export class DashboardController {
   @ApiOkResponseBase(TimeseriesData)
   public async getDailyTimeseriesData(
     @Param('thingId') thingId: string,
-    @Body('timezone') timezone: string = 'Asia/HoChiMinh',
+    @Body('timezone') timezone: string = 'Asia/Saigon',
   ) {
     return await this.service.getDailyTimeseriesData(
       new ObjectId(thingId),
