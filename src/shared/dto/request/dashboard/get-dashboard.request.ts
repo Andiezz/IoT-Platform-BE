@@ -9,6 +9,7 @@ export class GetDashboardDto {
   @IsOptional()
   @ApiPropertyOptional()
   @Transform(({ value }) => {
+    if (!value) return moment.tz('Asia/Ho_Chi_Minh').startOf('day').toDate();
     const date = moment(value);
     if (!date.isValid()) throw new BadRequestException('from-is-valid-false');
     return date.toDate();
@@ -18,6 +19,7 @@ export class GetDashboardDto {
   @IsOptional()
   @ApiPropertyOptional()
   @Transform(({ value }) => {
+    if (!value) return moment.tz('Asia/Ho_Chi_Minh').endOf('day').toDate();
     const date = moment(value);
     if (!date.isValid()) throw new BadRequestException('to-is-valid-false');
     return date.toDate();
