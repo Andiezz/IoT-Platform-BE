@@ -40,7 +40,10 @@ export class DashboardService {
     user: UserModel,
   ): Promise<GetDashboardResponse> {
     try {
-      const { from, to } = getDashboardDto;
+      let { from, to } = getDashboardDto;
+      from ?? (from = moment.tz('Asia/Ho_Chi_Minh').startOf('day').toDate())
+      to ?? (to = moment.tz('Asia/Ho_Chi_Minh').endOf('day').toDate())
+
       // I. Validate data and permissions
       // I.1 Validate query
       if (from > to) {
@@ -108,7 +111,10 @@ export class DashboardService {
   ) {
     try {
       const db = this.client.db(this.cfg.getOrThrow('database').dbName);
-      const { from, to, type, timezone } = getDashboardDto;
+      let { from, to, type, timezone } = getDashboardDto;
+      from ?? (from = moment.tz('Asia/Ho_Chi_Minh').startOf('day').toDate())
+      to ?? (to = moment.tz('Asia/Ho_Chi_Minh').endOf('day').toDate())
+
       // generate query parameters
       const match = {};
       match['metadata.thingId'] = thingId.toString();
@@ -254,7 +260,10 @@ export class DashboardService {
   ) {
     try {
       const db = this.client.db(this.cfg.getOrThrow('database').dbName);
-      const { from, to } = getDashboardDto;
+      let { from, to } = getDashboardDto;
+      from ?? (from = moment.tz('Asia/Ho_Chi_Minh').startOf('day').toDate())
+      to ?? (to = moment.tz('Asia/Ho_Chi_Minh').endOf('day').toDate())
+
       // generate query parameters
       const match = {};
       match['metadata.thingId'] = thingId.toString();
@@ -309,7 +318,10 @@ export class DashboardService {
     getDashboardDto: GetDashboardDto,
   ) {
     try {
-      const { from, to, timezone } = getDashboardDto;
+      let { from, to, timezone } = getDashboardDto;
+      from ?? (from = moment.tz('Asia/Ho_Chi_Minh').startOf('day').toDate())
+      to ?? (to = moment.tz('Asia/Ho_Chi_Minh').endOf('day').toDate())
+
       const warnings = await this.notificationService.getThingWarnings(
         thingId,
         timezone,

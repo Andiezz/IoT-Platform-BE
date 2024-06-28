@@ -19,7 +19,9 @@ export class GetDashboardDto {
   @IsOptional()
   @ApiPropertyOptional()
   @Transform(({ value }) => {
-    if (!value) return moment.tz('Asia/Ho_Chi_Minh').endOf('day').toDate();
+    if (!value) {
+      return moment.tz('Asia/Ho_Chi_Minh').endOf('day').toDate();
+    }
     const date = moment(value);
     if (!date.isValid()) throw new BadRequestException('to-is-valid-false');
     return date.toDate();
