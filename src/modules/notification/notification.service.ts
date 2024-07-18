@@ -8,6 +8,7 @@ import {
   TITLE,
   TYPE,
   formatTemplateContentArgument,
+  formatTemplateContentRecommendationActions,
 } from './template-notification';
 import { ThingService } from '../thing/thing.service';
 import { ListNotificationDto } from 'src/shared/dto/request/notification/list.request';
@@ -17,6 +18,7 @@ import { EvaluatedParameter } from 'src/shared/dto/request/notification/create.r
 import { SocketGateway } from '../socket/socket.gateway';
 import { UpdateNotificationDto } from 'src/shared/dto/request/notification/update.request';
 import * as moment from 'moment-timezone';
+import e from 'express';
 
 @Injectable()
 export class NotificationService {
@@ -47,10 +49,15 @@ export class NotificationService {
       warningThresholdNotification.title = TITLE.EXCEED_THRESHOLD;
       const templateContentArgument =
         formatTemplateContentArgument(evaluatedParameters);
+
+      const templateContentRecommendationActions =
+        formatTemplateContentRecommendationActions(evaluatedParameters);
+
       warningThresholdNotification.content = this.generateContent(
         CONTENT.WARNING_THRESHOLD,
         thingId.toString(),
         templateContentArgument,
+        templateContentRecommendationActions,
       );
       warningThresholdNotification.type = TYPE.WARNING;
       warningThresholdNotification.receivers = receivers.map((receiver) => {
@@ -204,7 +211,12 @@ export class NotificationService {
     return response;
   }
 
-  async getThingWarnings(thingId: ObjectId, timezone: string, from?: Date, to?: Date) {
+  async getThingWarnings(
+    thingId: ObjectId,
+    timezone: string,
+    from?: Date,
+    to?: Date,
+  ) {
     const notifications = await this.notificationCollection
       .aggregate([
         {
